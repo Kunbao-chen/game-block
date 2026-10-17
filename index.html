@@ -13,7 +13,78 @@
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
       margin: 0;
-      padding: 0;
+      padding: 0;<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>HTC 除錯測試版 - 俄羅斯方塊</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; background: #030712; color: #fff; font-family: sans-serif; overflow: hidden; }
+  </style>
+</head>
+<body class="flex flex-col justify-between items-center w-full h-full p-2">
+
+  <!-- 頂部除錯訊息顯示框 -->
+  <div id="debugLog" class="w-full bg-slate-800 text-yellow-300 text-xs p-2 rounded border border-slate-600 h-20 overflow-y-auto font-mono">
+    [Log] 程式初始化中...<br>
+  </div>
+
+  <!-- 遊戲區域與開始按鈕 -->
+  <div class="relative flex-1 w-full flex items-center justify-center my-2 bg-slate-900 rounded-xl">
+    <canvas id="tetris" class="bg-black block"></canvas>
+    <div id="overlay" class="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center gap-4 z-50">
+      <h2 class="text-2xl text-cyan-400 font-bold">TETRIS</h2>
+      <button id="startBtn" onclick="runGameStart()" class="px-8 py-4 bg-cyan-500 text-black text-lg font-bold rounded-xl active:bg-cyan-300">
+        開始遊戲
+      </button>
+    </div>
+  </div>
+
+  <script>
+    function log(msg) {
+      var d = document.getElementById('debugLog');
+      if (d) {
+        d.innerHTML += '[Log] ' + msg + '<br>';
+        d.scrollTop = d.scrollHeight;
+      }
+    }
+
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+      log('<span style="color:red">ERROR: ' + msg + ' (Line ' + lineNo + ')</span>');
+      return false;
+    };
+
+    var canvas = document.getElementById('tetris');
+    var ctx = canvas.getContext('2d');
+    var gameStarted = false;
+
+    function runGameStart() {
+      log('已觸發 runGameStart() 點擊事件');
+      try {
+        gameStarted = true;
+        document.getElementById('overlay').style.display = 'none';
+        log('蓋版已隱藏，開始繪製畫面...');
+        drawTestBlock();
+      } catch(e) {
+        log('<span style="color:red">啟動失敗: ' + e.message + '</span>');
+      }
+    }
+
+    function drawTestBlock() {
+      canvas.width = 200;
+      canvas.height = 400;
+      ctx.fillStyle = 'red';
+      ctx.fillRect(50, 50, 40, 40);
+      log('測試紅塊已繪製，遊戲正常運作中！');
+    }
+
+    log('腳本載入完成，等待點擊「開始遊戲」...');
+  </script>
+</body>
+</html>
     }
 
     html, body {
