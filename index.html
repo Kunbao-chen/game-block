@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>全螢幕填滿版 - 俄羅斯方塊</title>
+  <title>炸彈版 - 俄羅斯方塊</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
@@ -20,7 +20,7 @@
       width: 100%;
       height: 100%;
       height: 100dvh;
-      background-color: #050810;
+      background-color: #030712;
       color: #f8fafc;
       font-family: 'Press Start 2P', cursive, monospace;
       user-select: none;
@@ -29,10 +29,9 @@
     }
 
     .neon-border {
-      box-shadow: 0 0 12px rgba(34, 211, 238, 0.5);
+      box-shadow: 0 0 12px rgba(34, 211, 238, 0.4), inset 0 0 8px rgba(34, 211, 238, 0.2);
     }
 
-    /* 按鈕按下與回饋 */
     .btn-control {
       touch-action: none;
       transition: transform 0.04s ease, filter 0.04s ease;
@@ -41,20 +40,28 @@
       transform: scale(0.94);
       filter: brightness(1.35);
     }
+
+    /* 炸彈亮燈閃爍效果 */
+    @keyframes bombGlow {
+      0%, 100% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.6); }
+      50% { box-shadow: 0 0 20px rgba(239, 68, 68, 1); }
+    }
+    .bomb-ready {
+      animation: bombGlow 1s infinite;
+    }
   </style>
 </head>
 <body class="flex flex-col justify-between items-center w-full h-full p-1">
 
-  <!-- 1. 頂部 HUD：簡潔橫條 -->
+  <!-- 1. 頂部精簡狀態列 -->
   <header class="w-full bg-slate-900/90 rounded-lg p-1 border border-slate-800 flex items-center justify-between text-[10px] shrink-0 z-10">
-    
     <!-- HOLD 暫存 -->
     <div class="flex items-center gap-1 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
       <span class="text-[8px] text-slate-400">HOLD</span>
-      <canvas id="holdCanvas" width="30" height="30" class="block"></canvas>
+      <canvas id="holdCanvas" width="28" height="28" class="block"></canvas>
     </div>
 
-    <!-- 得分 / 等級 -->
+    <!-- 得分 / 等級 / 炸彈數 -->
     <div class="flex items-center gap-3">
       <div class="flex flex-col items-center">
         <div class="text-[7px] text-slate-400">SCORE</div>
@@ -64,26 +71,39 @@
         <div class="text-[7px] text-slate-400">LV</div>
         <div id="level" class="text-xs text-purple-400 font-bold">1</div>
       </div>
+      <div class="flex flex-col items-center">
+        <div class="text-[7px] text-red-400">BOMB</div>
+        <div id="bombCountHUD" class="text-xs text-red-500 font-bold">0</div>
+      </div>
     </div>
 
     <!-- NEXT 下一個 -->
     <div class="flex items-center gap-1 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
       <span class="text-[8px] text-slate-400">NEXT</span>
-      <canvas id="nextCanvas" width="30" height="30" class="block"></canvas>
+      <canvas id="nextCanvas" width="28" height="28" class="block"></canvas>
     </div>
-
-    <!-- 暫停 -->
-    <button id="btnPause" class="bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded border border-slate-700 text-xs">
-      ⏸️
-    </button>
   </header>
 
-  <!-- 2. 中間：主遊戲區域（無限充盈全螢幕） -->
-  <main id="mainContainer" class="flex-1 w-full flex items-center justify-center my-0.5 relative min-h-0 overflow-hidden">
-    <div id="canvasContainer" class="relative bg-slate-950 rounded-xl border-2 border-cyan-500/70 neon-border flex items-center justify-center">
+  <!-- 2. 中間：完全照草圖擺放的版面 (左側按鈕 - 中央極大化遊戲區 - 右側按鈕) -->
+  <main id="mainContainer" class="flex-1 w-full flex items-stretch gap-1 my-1 relative min-h-0 overflow-hidden">
+    
+    <!-- 草圖左側：上方 ↓ 加速 / 下方 ← 靠左 -->
+    <div class="w-16 sm:w-20 flex flex-col gap-1 shrink-0">
+      <button id="btnDown" class="flex-1 bg-slate-800 border-2 border-slate-600 rounded-xl text-2xl font-bold flex flex-col items-center justify-center btn-control">
+        <span>↓</span>
+        <span class="text-[8px] font-sans text-amber-400 mt-1">加速</span>
+      </button>
+      <button id="btnLeft" class="flex-1 bg-slate-800 border-2 border-slate-600 rounded-xl text-2xl font-bold flex flex-col items-center justify-center btn-control">
+        <span>←</span>
+        <span class="text-[8px] font-sans text-slate-400 mt-1">靠左</span>
+      </button>
+    </div>
+
+    <!-- 草圖中央：堆疊積木區域 (極大化) -->
+    <div id="canvasContainer" class="flex-1 relative bg-slate-950 rounded-xl border-2 border-cyan-500/70 neon-border flex items-center justify-center overflow-hidden">
       <canvas id="tetris" class="bg-slate-950 rounded-lg block"></canvas>
       
-      <!-- 開始 / 暫停 / 結束 蓋版 -->
+      <!-- 蓋版 (開始/暫停/結束) -->
       <div id="overlay" class="absolute inset-0 bg-slate-950/90 rounded-xl flex flex-col items-center justify-center p-4 gap-4 z-20">
         <h2 id="overlayTitle" class="text-2xl text-cyan-400 font-bold text-center">TETRIS</h2>
         <p id="finalScore" class="text-xs text-slate-300 font-sans hidden">最終得分: 0</p>
@@ -92,42 +112,40 @@
         </button>
       </div>
     </div>
-  </main>
 
-  <!-- 3. 底部：放大填滿的大按鈕區 -->
-  <footer class="w-full grid grid-cols-5 gap-1 items-stretch shrink-0 pb-1 h-[28vh] max-h-[220px] min-h-[140px]">
-    
-    <!-- 左手區 -->
-    <button id="btnLeft" class="bg-slate-800 border-2 border-slate-600 rounded-2xl text-3xl font-bold flex flex-col items-center justify-center btn-control">
-      <span>←</span>
-      <span class="text-[9px] font-sans text-slate-400 mt-0.5">靠左</span>
-    </button>
-
-    <button id="btnDown" class="bg-slate-800 border-2 border-slate-600 rounded-2xl text-3xl font-bold flex flex-col items-center justify-center btn-control">
-      <span>↓</span>
-      <span class="text-[9px] font-sans text-amber-400 mt-0.5">加速</span>
-    </button>
-
-    <!-- 中間區 -->
-    <div class="flex flex-col gap-1 justify-between">
-      <button id="btnHardDrop" class="bg-amber-600 border-2 border-amber-300 rounded-xl text-white font-bold flex-1 flex flex-col items-center justify-center btn-control">
-        <span class="text-xl">⚡</span>
-        <span class="text-[9px] font-sans mt-0.5">到底</span>
+    <!-- 草圖右側：上方 ↻ 旋轉 / 下方 → 靠右 -->
+    <div class="w-16 sm:w-20 flex flex-col gap-1 shrink-0">
+      <button id="btnRotate" class="flex-1 bg-cyan-700 border-2 border-cyan-400 rounded-xl text-2xl font-bold text-cyan-100 flex flex-col items-center justify-center btn-control shadow-md">
+        <span>↻</span>
+        <span class="text-[8px] font-sans text-cyan-200 mt-1">旋轉</span>
       </button>
-      <button id="btnHold" class="bg-slate-800 border border-slate-600 rounded-lg py-1.5 text-[9px] font-sans text-slate-300 btn-control">
-        📦 暫存
+      <button id="btnRight" class="flex-1 bg-slate-800 border-2 border-slate-600 rounded-xl text-2xl font-bold flex flex-col items-center justify-center btn-control">
+        <span>→</span>
+        <span class="text-[8px] font-sans text-slate-400 mt-1">靠右</span>
       </button>
     </div>
 
-    <!-- 右手區 -->
-    <button id="btnRotate" class="bg-cyan-700 border-2 border-cyan-400 rounded-2xl text-3xl font-bold text-cyan-100 flex flex-col items-center justify-center btn-control shadow-md">
-      <span>↻</span>
-      <span class="text-[9px] font-sans text-cyan-200 mt-0.5">旋轉</span>
+  </main>
+
+  <!-- 3. 草圖底部按鈕區：⏸️ 暫停 | Restart 重新開始 | 💥 爆炸/炸彈 -->
+  <footer class="w-full grid grid-cols-3 gap-1.5 items-stretch shrink-0 pb-1 h-[14vh] max-h-[110px] min-h-[75px]">
+    
+    <!-- ⏸️ 暫停按鈕 -->
+    <button id="btnPause" class="bg-slate-800 border-2 border-slate-600 rounded-xl text-xl font-bold flex flex-col items-center justify-center btn-control text-slate-200">
+      <span>⏸️</span>
+      <span class="text-[8px] font-sans text-slate-400 mt-0.5">Pause</span>
     </button>
 
-    <button id="btnRight" class="bg-slate-800 border-2 border-slate-600 rounded-2xl text-3xl font-bold flex flex-col items-center justify-center btn-control">
-      <span>→</span>
-      <span class="text-[9px] font-sans text-slate-400 mt-0.5">靠右</span>
+    <!-- Restart 重新開始按鈕 -->
+    <button id="btnRestart" class="bg-slate-800 border-2 border-slate-600 rounded-xl text-sm font-bold flex flex-col items-center justify-center btn-control text-cyan-300">
+      <span class="text-lg">🔄</span>
+      <span class="text-[9px] font-sans mt-0.5">Restart</span>
+    </button>
+
+    <!-- 💥 爆炸按鈕 (消 4 行觸發發放) -->
+    <button id="btnBomb" class="bg-red-900/80 border-2 border-red-500 rounded-xl text-white font-bold flex flex-col items-center justify-center btn-control relative">
+      <span class="text-xl">💣</span>
+      <span id="btnBombText" class="text-[9px] font-sans text-red-300 mt-0.5">炸彈 (0)</span>
     </button>
 
   </footer>
@@ -145,23 +163,26 @@
 
     const scoreEl = document.getElementById('score');
     const levelEl = document.getElementById('level');
+    const bombCountHUD = document.getElementById('bombCountHUD');
+    const btnBombText = document.getElementById('btnBombText');
+    const btnBomb = document.getElementById('btnBomb');
+
     const overlay = document.getElementById('overlay');
     const overlayTitle = document.getElementById('overlayTitle');
     const finalScore = document.getElementById('finalScore');
     const startBtn = document.getElementById('startBtn');
 
     let BLOCK_SIZE = 20;
+    let bombInventory = 0; // 累積的炸彈數量
 
-    // 動態極大化計算：優先依據螢幕可用空間放滿 Canvas
     function resizeCanvas() {
-      const main = document.getElementById('mainContainer');
-      const maxH = main.clientHeight - 4;
-      const maxW = main.clientWidth - 4;
+      const container = document.getElementById('canvasContainer');
+      const maxH = container.clientHeight - 8;
+      const maxW = container.clientWidth - 8;
 
       let bSizeH = Math.floor(maxH / ROWS);
       let bSizeW = Math.floor(maxW / COLS);
 
-      // 選擇能完全放入螢幕最大化的尺寸
       BLOCK_SIZE = Math.min(bSizeH, bSizeW);
       BLOCK_SIZE = Math.max(BLOCK_SIZE, 12);
 
@@ -223,6 +244,23 @@
       } catch(e){}
     }
 
+    function playExplosionSound() {
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.4);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.4);
+      } catch(e){}
+    }
+
     class Piece {
       constructor(type) {
         this.type = type;
@@ -230,6 +268,7 @@
         this.color = COLORS[type];
         this.x = Math.floor((COLS - this.shape[0].length) / 2);
         this.y = 0;
+        this.isBomb = false; // 是否已轉化為炸彈方塊
       }
     }
 
@@ -263,7 +302,7 @@
           if (value !== 0) {
             let boardY = piece.y + r;
             let boardX = piece.x + c;
-            if (boardY >= 0) board[boardY][boardX] = piece.color;
+            if (boardY >= 0) board[boardY][boardX] = piece.isBomb ? '#ef4444' : piece.color;
           }
         });
       });
@@ -320,21 +359,13 @@
       updateUI();
     }
 
-    function hardDrop() {
-      if (!currentPiece || gameOver || isPaused || !gameStarted) return;
-      let dropDistance = 0;
-      while (!collide(board, currentPiece, { x: 0, y: 1 })) {
-        currentPiece.y++;
-        dropDistance++;
-      }
-      score += dropDistance * 2;
-      playSound(650, 0.08);
-      lockPiece();
-      updateUI();
-    }
-
     function lockPiece() {
-      merge(board, currentPiece);
+      if (currentPiece.isBomb) {
+        // 💥 觸發炸彈爆炸機制：摧毀周圍 5x5 方塊
+        triggerExplosion(currentPiece);
+      } else {
+        merge(board, currentPiece);
+      }
       clearLines();
       currentPiece = nextPiece;
       nextPiece = getRandomPiece();
@@ -347,25 +378,37 @@
       }
     }
 
-    function doHold() {
-      if (!canHold || gameOver || isPaused || !gameStarted) return;
-      playSound(350, 0.06);
-      if (!holdPiece) {
-        holdPiece = new Piece(currentPiece.type);
-        currentPiece = nextPiece;
-        nextPiece = getRandomPiece();
-      } else {
-        let temp = holdPiece.type;
-        holdPiece = new Piece(currentPiece.type);
-        currentPiece = new Piece(temp);
+    // 💥 炸彈爆炸邏輯：炸毀著陸點周邊 5x5 範圍內的方塊
+    function triggerExplosion(piece) {
+      playExplosionSound();
+      
+      // 計算爆炸中心點
+      const centerX = piece.x + Math.floor(piece.shape[0].length / 2);
+      const centerY = piece.y + Math.floor(piece.shape.length / 2);
+
+      const radius = 2; // 5x5 範圍
+      for (let r = centerY - radius; r <= centerY + radius; r++) {
+        for (let c = centerX - radius; c <= centerX + radius; c++) {
+          if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+            board[r][c] = 0; // 清空方塊
+          }
+        }
       }
-      canHold = false;
-      drawPreview(holdCtx, holdPiece);
+
+      // 畫面震動效果
+      const container = document.getElementById('canvasContainer');
+      container.style.transform = 'translate(4px, 4px)';
+      setTimeout(() => container.style.transform = 'translate(-4px, -4px)', 50);
+      setTimeout(() => container.style.transform = 'translate(0, 0)', 100);
     }
 
-    function updateDifficulty() {
-      level = Math.floor(lines / 10) + 1;
-      dropInterval = Math.max(60, Math.floor(1000 * Math.pow(0.85, level - 1)));
+    // 觸發啟用炸彈
+    function activateBomb() {
+      if (bombInventory <= 0 || !currentPiece || currentPiece.isBomb || gameOver || isPaused || !gameStarted) return;
+      bombInventory--;
+      currentPiece.isBomb = true;
+      playSound(800, 0.1, 'sine');
+      updateUI();
     }
 
     function clearLines() {
@@ -385,14 +428,26 @@
         lines += linesCleared;
         const lineScores = [0, 100, 300, 500, 800];
         score += (lineScores[linesCleared] || 1000) * level;
+
+        // 💥 獎勵：一次消除 4 行 (Tetris Clear) 獲得一顆炸彈！
+        if (linesCleared === 4) {
+          bombInventory++;
+          playSound(900, 0.3, 'triangle');
+        }
+
         updateDifficulty();
       }
+    }
+
+    function updateDifficulty() {
+      level = Math.floor(lines / 10) + 1;
+      dropInterval = Math.max(60, Math.floor(1000 * Math.pow(0.85, level - 1)));
     }
 
     function drawBlock(ctxTarget, x, y, color) {
       ctxTarget.fillStyle = color;
       ctxTarget.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-      ctxTarget.strokeStyle = '#050810';
+      ctxTarget.strokeStyle = '#030712';
       ctxTarget.lineWidth = 1.5;
       ctxTarget.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
     }
@@ -409,6 +464,7 @@
       }
 
       if (currentPiece) {
+        // Ghost Piece 投影
         let ghostY = 0;
         while (!collide(board, currentPiece, { x: 0, y: ghostY + 1 })) {
           ghostY++;
@@ -416,16 +472,18 @@
         currentPiece.shape.forEach((row, r) => {
           row.forEach((value, c) => {
             if (value !== 0) {
-              ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+              ctx.fillStyle = currentPiece.isBomb ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255, 255, 255, 0.15)';
               ctx.fillRect((currentPiece.x + c) * BLOCK_SIZE, (currentPiece.y + r + ghostY) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
             }
           });
         });
 
+        // 繪製當前方塊 (若是炸彈則閃爍紅色)
         currentPiece.shape.forEach((row, r) => {
           row.forEach((value, c) => {
             if (value !== 0) {
-              drawBlock(ctx, currentPiece.x + c, currentPiece.y + r, currentPiece.color);
+              const pieceColor = currentPiece.isBomb ? '#ef4444' : currentPiece.color;
+              drawBlock(ctx, currentPiece.x + c, currentPiece.y + r, pieceColor);
             }
           });
         });
@@ -436,149 +494,9 @@
     }
 
     function drawPreview(pCtx, piece) {
-      pCtx.clearRect(0, 0, 30, 30);
+      pCtx.clearRect(0, 0, 28, 28);
       if (!piece) return;
       const pBlockSize = 5;
       const shape = piece.shape;
-      const offsetX = (30 - shape[0].length * pBlockSize) / 2;
-      const offsetY = (30 - shape.length * pBlockSize) / 2;
-
-      shape.forEach((row, r) => {
-        row.forEach((value, c) => {
-          if (value !== 0) {
-            pCtx.fillStyle = piece.color;
-            pCtx.fillRect(offsetX + c * pBlockSize, offsetY + r * pBlockSize, pBlockSize, pBlockSize);
-          }
-        });
-      });
-    }
-
-    function updateUI() {
-      scoreEl.innerText = score;
-      levelEl.innerText = level;
-    }
-
-    function gameLoop(time = 0) {
-      const deltaTime = time - lastTime;
-      lastTime = time;
-
-      if (gameStarted && !isPaused && !gameOver) {
-        dropCounter += deltaTime;
-        if (dropCounter > dropInterval) {
-          playerDrop();
-        }
-        draw();
-      }
-      requestAnimationFrame(gameLoop);
-    }
-
-    function startGame() {
-      initAudio();
-      board = createBoard();
-      score = 0;
-      lines = 0;
-      level = 1;
-      updateDifficulty();
-      gameOver = false;
-      isPaused = false;
-      gameStarted = true;
-      holdPiece = null;
-      canHold = true;
-      currentPiece = getRandomPiece();
-      nextPiece = getRandomPiece();
-      overlay.classList.add('hidden');
-      resizeCanvas();
-      updateUI();
-    }
-
-    function togglePause() {
-      if (!gameStarted || gameOver) return;
-      isPaused = !isPaused;
-      if (isPaused) {
-        showOverlay('遊戲暫停');
-      } else {
-        overlay.classList.add('hidden');
-      }
-    }
-
-    function showOverlay(title) {
-      overlayTitle.innerText = title;
-      finalScore.innerText = `最終得分: ${score}`;
-      if (title !== 'TETRIS') finalScore.classList.remove('hidden');
-      startBtn.innerText = title === '遊戲暫停' ? '繼續遊戲' : '開始遊戲';
-      overlay.classList.remove('hidden');
-    }
-
-    // 觸控與按鍵處理
-    function attachControl(elementId, action, isContinuous = false) {
-      const btn = document.getElementById(elementId);
-      let timer = null;
-      let repeatTimer = null;
-
-      const handleStart = (e) => {
-        e.preventDefault();
-        initAudio();
-        btn.classList.add('active');
-        action();
-
-        if (isContinuous) {
-          timer = setTimeout(() => {
-            repeatTimer = setInterval(action, 60);
-          }, 160);
-        }
-      };
-
-      const handleEnd = (e) => {
-        if (e) e.preventDefault();
-        btn.classList.remove('active');
-        clearTimeout(timer);
-        clearInterval(repeatTimer);
-      };
-
-      btn.addEventListener('touchstart', handleStart, { passive: false });
-      btn.addEventListener('touchend', handleEnd, { passive: false });
-      btn.addEventListener('touchcancel', handleEnd, { passive: false });
-      
-      btn.addEventListener('mousedown', handleStart);
-      btn.addEventListener('mouseup', handleEnd);
-      btn.addEventListener('mouseleave', handleEnd);
-    }
-
-    attachControl('btnLeft', () => playerMove(-1), true);
-    attachControl('btnRight', () => playerMove(1), true);
-    attachControl('btnDown', () => playerDrop(), true);
-
-    attachControl('btnRotate', () => playerRotate(), false);
-    attachControl('btnHardDrop', () => hardDrop(), false);
-    attachControl('btnHold', () => doHold(), false);
-    attachControl('btnPause', () => togglePause(), false);
-
-    const handleStartClick = (e) => {
-      e.preventDefault();
-      if (isPaused) togglePause();
-      else startGame();
-    };
-    startBtn.addEventListener('click', handleStartClick);
-    startBtn.addEventListener('touchend', handleStartClick);
-
-    document.addEventListener('keydown', (e) => {
-      if (!gameStarted && e.code === 'Space') { startGame(); return; }
-      if (e.code === 'KeyP') { togglePause(); return; }
-      if (isPaused || gameOver) return;
-
-      switch (e.code) {
-        case 'ArrowLeft': case 'KeyA': playerMove(-1); break;
-        case 'ArrowRight': case 'KeyD': playerMove(1); break;
-        case 'ArrowDown': case 'KeyS': playerDrop(); break;
-        case 'ArrowUp': case 'KeyW': case 'KeyX': playerRotate(); break;
-        case 'Space': hardDrop(); break;
-        case 'KeyC': case 'ShiftLeft': case 'ShiftRight': doHold(); break;
-      }
-    });
-
-    resizeCanvas();
-    showOverlay('TETRIS');
-    requestAnimationFrame(gameLoop);
-  </script>
-</body>
-</html>
+      const offsetX = (28 - shape[0].length * pBlockSize) / 2;
+      const offsetY
