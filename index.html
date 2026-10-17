@@ -1,508 +1,774 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-TW" class="h-full bg-slate-950 text-slate-100 select-none">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>經典俄羅斯方塊 Tetris</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-    body {
-      font-family: 'Press Start 2P', monospace;
-      background-color: #0f172a;
-      color: #f8fafc;
-      user-select: none;
-    }
-    .neon-border {
-      box-shadow: 0 0 15px rgba(59, 130, 246, 0.5), inset 0 0 15px rgba(59, 130, 246, 0.3);
-    }
-    .btn-act:active {
-      transform: scale(0.95);
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>俄羅斯方塊 - 平板/觸控最佳化版</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Noto+Sans+TC:wght@500;700;900&display=swap');
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        .font-arcade {
+            font-family: 'Orbitron', 'Noto Sans TC', sans-serif;
+        }
+
+        /* Glassmorphism Panel */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
+
+        /* Neon Shadow Effects */
+        .glow-cyan { box-shadow: 0 0 20px rgba(6, 182, 212, 0.35); }
+        .glow-purple { box-shadow: 0 0 20px rgba(168, 85, 247, 0.35); }
+
+        /* Custom Touch Control Button Feedback */
+        .touch-btn {
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: transform 0.05s ease, background-color 0.1s ease, box-shadow 0.1s ease;
+        }
+        .touch-btn:active, .touch-btn.active {
+            transform: scale(0.92);
+            filter: brightness(1.3);
+        }
+
+        /* Prevent unwanted touch behavior on controls */
+        .no-tap-highlight {
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-2 sm:p-4">
+<body class="h-full flex flex-col justify-between items-center p-2 sm:p-4 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 no-tap-highlight">
 
-  <!-- 標題與控制器 -->
-  <header class="mb-4 text-center">
-    <h1 class="text-2xl sm:text-4xl text-cyan-400 tracking-wider drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]">TETRIS</h1>
-  </header>
-
-  <div class="flex flex-col lg:flex-row gap-4 items-center lg:items-start">
-    
-    <!-- 左側面板：Hold 暫存與資訊 -->
-    <div class="flex lg:flex-col gap-4 w-full lg:w-36 justify-between">
-      <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 neon-border flex-1 text-center">
-        <div class="text-xs text-slate-400 mb-2">HOLD</div>
-        <canvas id="holdCanvas" width="80" height="80" class="mx-auto block"></canvas>
-      </div>
-      <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 neon-border flex-1 text-center flex flex-col justify-center">
-        <div class="text-[10px] text-slate-400 mb-1">SCORE</div>
-        <div id="score" class="text-sm text-yellow-400 font-bold">0</div>
-      </div>
-    </div>
-
-    <!-- 中間：主遊戲區域 -->
-    <div class="relative bg-slate-900 p-2 sm:p-3 rounded-2xl border-2 border-cyan-500/50 neon-border">
-      <canvas id="tetris" width="240" height="480" class="bg-slate-950 rounded-lg block"></canvas>
-      
-      <!-- 遊戲結束 / 暫停 蓋版 -->
-      <div id="overlay" class="absolute inset-0 bg-slate-950/90 rounded-2xl flex flex-col items-center justify-center p-4 gap-4 hidden">
-        <h2 id="overlayTitle" class="text-xl sm:text-2xl text-red-500 font-bold text-center">GAME OVER</h2>
-        <p id="finalScore" class="text-xs text-slate-300">Final Score: 0</p>
-        <button id="startBtn" class="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold rounded-lg transition-all btn-act">
-          START GAME
-        </button>
-      </div>
-    </div>
-
-    <!-- 右側面板：NEXT 與等級 / 消除行數 -->
-    <div class="flex lg:flex-col gap-4 w-full lg:w-36 justify-between">
-      <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 neon-border flex-1 text-center">
-        <div class="text-xs text-slate-400 mb-2">NEXT</div>
-        <canvas id="nextCanvas" width="80" height="80" class="mx-auto block"></canvas>
-      </div>
-      <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 neon-border flex-1 text-center flex flex-col justify-around">
-        <div>
-          <div class="text-[10px] text-slate-400 mb-1">LINES</div>
-          <div id="lines" class="text-xs text-green-400 font-bold">0</div>
+    <!-- 頂部列 Header -->
+    <header class="w-full max-w-5xl flex items-center justify-between py-2 px-4 glass-panel rounded-2xl mb-1 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-cyan-500/20 rounded-xl border border-cyan-500/30 text-cyan-400">
+                <i data-lucide="gamepad-2" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="font-arcade text-lg sm:text-xl font-black tracking-wider bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                    俄羅斯方塊
+                </h1>
+                <p class="text-[11px] text-slate-400 hidden sm:block">觸控與平板專用最佳化版</p>
+            </div>
         </div>
-        <div class="mt-2">
-          <div class="text-[10px] text-slate-400 mb-1">LEVEL</div>
-          <div id="level" class="text-xs text-purple-400 font-bold">1</div>
+
+        <!-- 頂部按鈕 (聲音/暫停/重置) -->
+        <div class="flex items-center gap-2">
+            <button id="soundBtn" class="p-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition border border-slate-700 touch-btn" title="切換音效">
+                <i id="soundIcon" data-lucide="volume-2" class="w-5 h-5"></i>
+            </button>
+            <button id="pauseBtn" class="p-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition border border-slate-700 touch-btn" title="暫停遊戲">
+                <i id="pauseIcon" data-lucide="pause" class="w-5 h-5"></i>
+            </button>
+            <button id="restartBtn" class="p-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition border border-slate-700 touch-btn" title="重新開始">
+                <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+            </button>
         </div>
-      </div>
-    </div>
+    </header>
 
-  </div>
+    <!-- 主遊戲與控制區 Container -->
+    <main class="w-full max-w-5xl flex-1 flex flex-col lg:flex-row items-center justify-center gap-3 my-auto overflow-hidden">
 
-  <!-- 行動裝置 / 螢幕按鈕區 -->
-  <div class="mt-4 w-full max-w-xs sm:max-w-md grid grid-cols-4 gap-2 text-[10px]">
-    <button id="btnHold" class="bg-slate-800 hover:bg-slate-700 py-3 rounded-lg border border-slate-600 btn-act">Hold (C)</button>
-    <button id="btnRotate" class="bg-slate-800 hover:bg-slate-700 py-3 rounded-lg border border-slate-600 btn-act">旋轉 (↑)</button>
-    <button id="btnPause" class="bg-slate-800 hover:bg-slate-700 py-3 rounded-lg border border-slate-600 btn-act">暫停 (P)</button>
-    <button id="btnHardDrop" class="bg-amber-600 hover:bg-amber-500 py-3 rounded-lg border border-amber-400 text-white font-bold col-span-1 btn-act">⚡ 落地</button>
-    
-    <button id="btnLeft" class="bg-slate-800 hover:bg-slate-700 py-3 rounded-lg border border-slate-600 btn-act">←</button>
-    <button id="btnDown" class="bg-slate-800 hover:bg-slate-700 py-3 rounded-lg border border-slate-600 btn-act">↓ 加速</button>
-    <button id="btnRight" class="bg-slate-800 hover:bg-slate-700 py-3 rounded-lg border border-slate-600 btn-act">→</button>
-    <button id="btnSpaceDrop" class="bg-cyan-600 hover:bg-cyan-500 py-3 rounded-lg border border-cyan-400 text-slate-950 font-bold btn-act">Space</button>
-  </div>
+        <!-- 左側面板 (暫存 Hold / 分數 Stats) -->
+        <div class="w-full lg:w-44 flex lg:flex-col justify-between gap-2 shrink-0">
+            <!-- Hold 暫存 -->
+            <div class="glass-panel rounded-2xl p-2.5 flex-1 flex flex-col items-center justify-center">
+                <span class="font-arcade text-xs text-cyan-400 font-bold tracking-wider mb-1 flex items-center gap-1">
+                    <i data-lucide="box" class="w-3.5 h-3.5"></i> HOLD 暫存
+                </span>
+                <canvas id="holdCanvas" width="80" height="80" class="bg-slate-900/80 rounded-xl border border-slate-800"></canvas>
+            </div>
 
-  <script>
-    const COLS = 10;
-    const ROWS = 20;
-    const BLOCK_SIZE = 24;
+            <!-- Stats 計分資訊 -->
+            <div class="glass-panel rounded-2xl p-2.5 flex-1 flex flex-col justify-around gap-1 text-center">
+                <div>
+                    <div class="text-[10px] text-slate-400 font-arcade">SCORE 分數</div>
+                    <div id="scoreVal" class="font-arcade text-base sm:text-2xl font-black text-cyan-400">0</div>
+                </div>
+                <div class="h-px bg-slate-800 w-full my-0.5"></div>
+                <div class="flex justify-around lg:flex-col lg:gap-1">
+                    <div>
+                        <div class="text-[9px] text-slate-400 font-arcade">LINES 消行</div>
+                        <div id="linesVal" class="font-arcade text-xs sm:text-base text-emerald-400 font-bold">0</div>
+                    </div>
+                    <div>
+                        <div class="text-[9px] text-slate-400 font-arcade">LEVEL 等級</div>
+                        <div id="levelVal" class="font-arcade text-xs sm:text-base text-purple-400 font-bold">1</div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    const canvas = document.getElementById('tetris');
-    const ctx = canvas.getContext('2d');
-    const holdCanvas = document.getElementById('holdCanvas');
-    const holdCtx = holdCanvas.getContext('2d');
-    const nextCanvas = document.getElementById('nextCanvas');
-    const nextCtx = nextCanvas.getContext('2d');
+        <!-- 中央：遊戲畫面 (Tetris Board Canvas) -->
+        <div class="relative flex justify-center items-center h-full max-h-[62vh] lg:max-h-[70vh] aspect-[1/2] shrink-0">
+            <div class="relative p-1.5 glass-panel rounded-3xl border border-cyan-500/30 glow-cyan h-full flex items-center justify-center">
+                <!-- 遊戲棋盤 -->
+                <canvas id="tetrisCanvas" width="300" height="600" class="bg-slate-950 rounded-2xl block border border-slate-800 shadow-2xl h-full w-auto object-contain"></canvas>
 
-    const scoreEl = document.getElementById('score');
-    const linesEl = document.getElementById('lines');
-    const levelEl = document.getElementById('level');
-    const overlay = document.getElementById('overlay');
-    const overlayTitle = document.getElementById('overlayTitle');
-    const finalScore = document.getElementById('finalScore');
-    const startBtn = document.getElementById('startBtn');
+                <!-- 暫停遮罩 (Pause Overlay) -->
+                <div id="pauseOverlay" class="absolute inset-0 bg-slate-950/85 backdrop-blur-md rounded-3xl hidden flex flex-col items-center justify-center gap-4 z-20">
+                    <div class="p-3 bg-cyan-500/20 rounded-full border border-cyan-500/40 text-cyan-400">
+                        <i data-lucide="pause-circle" class="w-12 h-12"></i>
+                    </div>
+                    <h2 class="font-arcade text-2xl font-black text-white tracking-widest">遊戲暫停</h2>
+                    <p class="text-xs text-slate-400">點擊下方按鈕繼續遊戲</p>
+                    <button id="resumeBtn" class="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 active:scale-95 text-slate-950 font-bold font-arcade rounded-xl transition shadow-lg shadow-cyan-500/20">
+                        繼續遊戲 (RESUME)
+                    </button>
+                </div>
 
-    // 方塊形狀定義
-    const SHAPES = {
-      I: [[0,0,0,0], [1,1,1,1], [0,0,0,0], [0,0,0,0]],
-      J: [[1,0,0], [1,1,1], [0,0,0]],
-      L: [[0,0,1], [1,1,1], [0,0,0]],
-      O: [[1,1], [1,1]],
-      S: [[0,1,1], [1,1,0], [0,0,0]],
-      T: [[0,1,0], [1,1,1], [0,0,0]],
-      Z: [[1,1,0], [0,1,1], [0,0,0]]
-    };
+                <!-- 遊戲結束遮罩 (Game Over Overlay) -->
+                <div id="gameOverOverlay" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md rounded-3xl hidden flex flex-col items-center justify-center gap-4 z-20">
+                    <div class="p-3 bg-rose-500/20 rounded-full border border-rose-500/40 text-rose-500 animate-bounce">
+                        <i data-lucide="skull" class="w-12 h-12"></i>
+                    </div>
+                    <h2 class="font-arcade text-2xl font-black text-rose-500 tracking-widest">GAME OVER</h2>
+                    <div class="text-center space-y-1">
+                        <p class="text-xs text-slate-400">最終得分</p>
+                        <p id="finalScore" class="font-arcade text-3xl font-black text-amber-400">0</p>
+                    </div>
+                    <button id="startAgainBtn" class="px-6 py-3 bg-gradient-to-r from-rose-500 to-indigo-600 text-white font-bold font-arcade rounded-xl transition shadow-lg active:scale-95">
+                        再玩一次 (PLAY AGAIN)
+                    </button>
+                </div>
+            </div>
+        </div>
 
-    const COLORS = {
-      I: '#06b6d4', J: '#3b82f6', L: '#f97316',
-      O: '#eab308', S: '#22c55e', T: '#a855f7', Z: '#ef4444'
-    };
+        <!-- 右側面板 (Next 下一個預覽 / 最高分) -->
+        <div class="w-full lg:w-44 flex lg:flex-col justify-between gap-2 shrink-0">
+            <!-- Next 預覽 -->
+            <div class="glass-panel rounded-2xl p-2.5 flex-1 flex flex-col items-center justify-center">
+                <span class="font-arcade text-xs text-purple-400 font-bold tracking-wider mb-1 flex items-center gap-1">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> NEXT 下一個
+                </span>
+                <canvas id="nextCanvas" width="80" height="80" class="bg-slate-900/80 rounded-xl border border-slate-800"></canvas>
+            </div>
 
-    let board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
-    let score = 0, lines = 0, level = 1;
-    let gameOver = false, isPaused = false, gameStarted = false;
-    let dropCounter = 0, dropInterval = 1000;
-    let lastTime = 0;
+            <!-- 最高紀錄 Panel -->
+            <div class="glass-panel rounded-2xl p-2.5 flex-1 flex flex-col justify-center gap-1 text-center">
+                <div class="text-[10px] text-slate-400 font-arcade">HIGH SCORE 最高紀錄</div>
+                <div id="highScoreVal" class="font-arcade text-base sm:text-xl font-bold text-amber-400">0</div>
+            </div>
+        </div>
+    </main>
 
-    let currentPiece = null;
-    let nextPiece = null;
-    let holdPiece = null;
-    let canHold = true;
+    <!-- 📱 平板 / 手機專用螢幕虛擬控制器 (Virtual Gamepad Overlay) -->
+    <footer class="w-full max-w-4xl pt-2 pb-1 px-2 shrink-0">
+        <div class="grid grid-cols-12 gap-2 items-center">
 
-    // 簡易 Web Audio API 聲音效果
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playSound(freq, duration, type='square') {
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      try {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = type;
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + duration);
-      } catch(e){}
-    }
+            <!-- 左側：功能動作鍵 (Hold, Rotate, Hard Drop) -->
+            <div class="col-span-5 grid grid-cols-2 gap-2">
+                <!-- 📦 Hold 暫存按鈕 -->
+                <button id="btnHold" class="touch-btn col-span-2 glass-panel py-2.5 px-2 rounded-2xl border border-cyan-500/40 bg-slate-800/80 flex items-center justify-center gap-1.5 text-cyan-400 font-bold active:bg-cyan-500/20">
+                    <i data-lucide="box" class="w-5 h-5"></i>
+                    <span class="text-xs font-arcade">HOLD 暫存</span>
+                </button>
 
-    class Piece {
-      constructor(type) {
-        this.type = type;
-        this.shape = SHAPES[type];
-        this.color = COLORS[type];
-        this.x = Math.floor((COLS - this.shape[0].length) / 2);
-        this.y = 0;
-      }
-    }
+                <!-- 旋轉 ↻ -->
+                <button id="btnRotate" class="touch-btn col-span-1 glass-panel py-3 px-2 rounded-2xl border border-amber-500/40 bg-slate-800/80 flex flex-col items-center justify-center text-amber-400 font-bold active:bg-amber-500/20">
+                    <i data-lucide="rotate-cw" class="w-6 h-6 mb-0.5"></i>
+                    <span class="text-[10px]">旋轉</span>
+                </button>
 
-    function getRandomPiece() {
-      const types = Object.keys(SHAPES);
-      const randomType = types[Math.floor(Math.random() * types.length)];
-      return new Piece(randomType);
-    }
+                <!-- ⚡ 瞬間落地 -->
+                <button id="btnHardDrop" class="touch-btn col-span-1 glass-panel py-3 px-2 rounded-2xl border border-emerald-500/40 bg-emerald-950/40 flex flex-col items-center justify-center text-emerald-400 font-bold active:bg-emerald-500/30">
+                    <i data-lucide="zap" class="w-6 h-6 mb-0.5"></i>
+                    <span class="text-[10px]">瞬間落地</span>
+                </button>
+            </div>
 
-    function createBoard() {
-      return Array.from({ length: ROWS }, () => Array(COLS).fill(0));
-    }
+            <!-- 中間：硬降 / 暫停快速按鈕 -->
+            <div class="col-span-2 flex flex-col gap-2">
+                <button id="btnQuickPause" class="touch-btn glass-panel py-6 rounded-2xl border border-slate-700 bg-slate-800/60 flex flex-col items-center justify-center text-slate-300">
+                    <i data-lucide="pause" class="w-5 h-5 mb-1"></i>
+                    <span class="text-[10px]">暫停</span>
+                </button>
+            </div>
 
-    function collide(board, piece, offset = { x: 0, y: 0 }) {
-      const shape = piece.shape;
-      for (let r = 0; r < shape.length; r++) {
-        for (let c = 0; c < shape[r].length; c++) {
-          if (shape[r][c] !== 0) {
-            let newX = piece.x + c + offset.x;
-            let newY = piece.y + r + offset.y;
-            if (newX < 0 || newX >= COLS || newY >= ROWS) return true;
-            if (newY >= 0 && board[newY][newX] !== 0) return true;
-          }
-        }
-      }
-      return false;
-    }
+            <!-- 右側：方向十字鍵 (DPAD - Left, Soft Drop, Right) -->
+            <div class="col-span-5 grid grid-cols-3 gap-1.5 items-center">
+                <!-- ← 向左 -->
+                <button id="btnLeft" class="touch-btn glass-panel py-5 rounded-2xl border border-indigo-500/40 bg-slate-800/80 flex items-center justify-center text-indigo-300 active:bg-indigo-500/30">
+                    <i data-lucide="chevron-left" class="w-8 h-8"></i>
+                </button>
 
-    function merge(board, piece) {
-      piece.shape.forEach((row, r) => {
-        row.forEach((value, c) => {
-          if (value !== 0) {
-            let boardY = piece.y + r;
-            let boardX = piece.x + c;
-            if (boardY >= 0) board[boardY][boardX] = piece.color;
-          }
-        });
-      });
-    }
+                <!-- ↓ 加速下落 (Soft Drop - 支持長按連續觸發) -->
+                <button id="btnDown" class="touch-btn glass-panel py-5 rounded-2xl border border-purple-500/40 bg-purple-950/30 flex flex-col items-center justify-center text-purple-300 active:bg-purple-500/30">
+                    <i data-lucide="chevron-down" class="w-8 h-8"></i>
+                    <span class="text-[9px] font-bold text-purple-400">加速</span>
+                </button>
 
-    function rotate(shape) {
-      const N = shape.length;
-      let result = Array.from({ length: N }, () => Array(N).fill(0));
-      for (let r = 0; r < N; r++) {
-        for (let c = 0; c < N; c++) {
-          result[c][N - 1 - r] = shape[r][c];
-        }
-      }
-      return result;
-    }
+                <!-- → 向右 -->
+                <button id="btnRight" class="touch-btn glass-panel py-5 rounded-2xl border border-indigo-500/40 bg-slate-800/80 flex items-center justify-center text-indigo-300 active:bg-indigo-500/30">
+                    <i data-lucide="chevron-right" class="w-8 h-8"></i>
+                </button>
+            </div>
 
-    function playerRotate() {
-      if (!currentPiece || gameOver || isPaused) return;
-      const originalShape = currentPiece.shape;
-      currentPiece.shape = rotate(currentPiece.shape);
-      
-      // Kick 測試 (簡單邊界修正)
-      let offset = 0;
-      if (collide(board, currentPiece)) {
-        if (!collide(board, currentPiece, { x: 1, y: 0 })) offset = 1;
-        else if (!collide(board, currentPiece, { x: -1, y: 0 })) offset = -1;
-        else if (!collide(board, currentPiece, { x: 2, y: 0 })) offset = 2;
-        else if (!collide(board, currentPiece, { x: -2, y: 0 })) offset = -2;
-        else {
-          currentPiece.shape = originalShape; // 旋轉失敗，還原
-          return;
-        }
-      }
-      currentPiece.x += offset;
-      playSound(400, 0.05);
-    }
+        </div>
+    </footer>
 
-    function playerMove(dir) {
-      if (!currentPiece || gameOver || isPaused) return;
-      if (!collide(board, currentPiece, { x: dir, y: 0 })) {
-        currentPiece.x += dir;
-        playSound(200, 0.03);
-      }
-    }
-
-    function playerDrop() {
-      if (!currentPiece || gameOver || isPaused) return;
-      if (!collide(board, currentPiece, { x: 0, y: 1 })) {
-        currentPiece.y++;
-        score += 1; // 軟落得分
-      } else {
-        lockPiece();
-      }
-      dropCounter = 0;
-      updateUI();
-    }
-
-    // ⚡ 瞬間落地 (Hard Drop)
-    function hardDrop() {
-      if (!currentPiece || gameOver || isPaused) return;
-      let dropDistance = 0;
-      while (!collide(board, currentPiece, { x: 0, y: 1 })) {
-        currentPiece.y++;
-        dropDistance++;
-      }
-      score += dropDistance * 2; // 硬落雙倍加分
-      playSound(600, 0.1);
-      lockPiece();
-      updateUI();
-    }
-
-    function lockPiece() {
-      merge(board, currentPiece);
-      clearLines();
-      currentPiece = nextPiece;
-      nextPiece = getRandomPiece();
-      canHold = true;
-
-      if (collide(board, currentPiece)) {
-        gameOver = true;
-        playSound(150, 0.5, 'sawtooth');
-        showOverlay('GAME OVER');
-      }
-    }
-
-    function doHold() {
-      if (!canHold || gameOver || isPaused) return;
-      playSound(300, 0.08);
-      if (!holdPiece) {
-        holdPiece = new Piece(currentPiece.type);
-        currentPiece = nextPiece;
-        nextPiece = getRandomPiece();
-      } else {
-        let temp = holdPiece.type;
-        holdPiece = new Piece(currentPiece.type);
-        currentPiece = new Piece(temp);
-      }
-      canHold = false;
-      drawPreview(holdCtx, holdPiece);
-    }
-
-    function clearLines() {
-      let linesCleared = 0;
-      outer: for (let r = ROWS - 1; r >= 0; r--) {
-        for (let c = 0; c < COLS; c++) {
-          if (board[r][c] === 0) continue outer;
-        }
-        const row = board.splice(r, 1)[0].fill(0);
-        board.unshift(row);
-        linesCleared++;
-        r++;
-      }
-
-      if (linesCleared > 0) {
-        playSound(523, 0.2);
-        lines += linesCleared;
-        const lineScores = [0, 100, 300, 500, 800];
-        score += (lineScores[linesCleared] || 1000) * level;
-        level = Math.floor(lines / 10) + 1;
-        dropInterval = Math.max(100, 1000 - (level - 1) * 80);
-      }
-    }
-
-    function drawBlock(ctx, x, y, color) {
-      ctx.fillStyle = color;
-      ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-      ctx.strokeStyle = '#0f172a';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // 繪製棋盤已固定方塊
-      for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-          if (board[r][c] !== 0) {
-            drawBlock(ctx, c, r, board[r][c]);
-          }
-        }
-      }
-
-      if (currentPiece) {
-        // 繪製 Ghost Piece (投影位置)
-        let ghostY = 0;
-        while (!collide(board, currentPiece, { x: 0, y: ghostY + 1 })) {
-          ghostY++;
-        }
-        currentPiece.shape.forEach((row, r) => {
-          row.forEach((value, c) => {
-            if (value !== 0) {
-              ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-              ctx.fillRect((currentPiece.x + c) * BLOCK_SIZE, (currentPiece.y + r + ghostY) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-              ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-              ctx.strokeRect((currentPiece.x + c) * BLOCK_SIZE, (currentPiece.y + r + ghostY) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+    <!-- 遊戲核心 JavaScript 邏輯 -->
+    <script>
+        // --- 1. 音效合成器 Web Audio API ---
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
             }
-          });
-        });
 
-        // 繪製目前方塊
-        currentPiece.shape.forEach((row, r) => {
-          row.forEach((value, c) => {
-            if (value !== 0) {
-              drawBlock(ctx, currentPiece.x + c, currentPiece.y + r, currentPiece.color);
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
             }
-          });
-        });
-      }
 
-      drawPreview(nextCtx, nextPiece);
-      drawPreview(holdCtx, holdPiece);
-    }
+            playTone(freq, type, duration, gainVal = 0.08) {
+                if (this.muted || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e) {}
+            }
 
-    function drawPreview(pCtx, piece) {
-      pCtx.clearRect(0, 0, 80, 80);
-      if (!piece) return;
-      const pBlockSize = 16;
-      const shape = piece.shape;
-      const offsetX = (80 - shape[0].length * pBlockSize) / 2;
-      const offsetY = (80 - shape.length * pBlockSize) / 2;
-
-      shape.forEach((row, r) => {
-        row.forEach((value, c) => {
-          if (value !== 0) {
-            pCtx.fillStyle = piece.color;
-            pCtx.fillRect(offsetX + c * pBlockSize, offsetY + r * pBlockSize, pBlockSize, pBlockSize);
-            pCtx.strokeStyle = '#0f172a';
-            pCtx.lineWidth = 1;
-            pCtx.strokeRect(offsetX + c * pBlockSize, offsetY + r * pBlockSize, pBlockSize, pBlockSize);
-          }
-        });
-      });
-    }
-
-    function updateUI() {
-      scoreEl.innerText = score;
-      linesEl.innerText = lines;
-      levelEl.innerText = level;
-    }
-
-    function gameLoop(time = 0) {
-      const deltaTime = time - lastTime;
-      lastTime = time;
-
-      if (gameStarted && !isPaused && !gameOver) {
-        dropCounter += deltaTime;
-        if (dropCounter > dropInterval) {
-          playerDrop();
+            move() { this.playTone(200, 'sine', 0.04, 0.04); }
+            rotate() { this.playTone(400, 'triangle', 0.06, 0.06); }
+            drop() { this.playTone(140, 'square', 0.08, 0.06); }
+            hardDrop() { this.playTone(90, 'sawtooth', 0.12, 0.1); }
+            lineClear() {
+                if (this.muted || !this.ctx) return;
+                [320, 420, 520, 680].forEach((f, i) => {
+                    setTimeout(() => this.playTone(f, 'sine', 0.1, 0.08), i * 50);
+                });
+            }
+            tetris() {
+                if (this.muted || !this.ctx) return;
+                [400, 523, 659, 783, 1046].forEach((f, i) => {
+                    setTimeout(() => this.playTone(f, 'triangle', 0.14, 0.1), i * 65);
+                });
+            }
+            gameOver() {
+                if (this.muted || !this.ctx) return;
+                [300, 250, 200, 140].forEach((f, i) => {
+                    setTimeout(() => this.playTone(f, 'sawtooth', 0.18, 0.12), i * 100);
+                });
+            }
         }
-        draw();
-      }
-      requestAnimationFrame(gameLoop);
-    }
 
-    function startGame() {
-      board = createBoard();
-      score = 0;
-      lines = 0;
-      level = 1;
-      dropInterval = 1000;
-      gameOver = false;
-      isPaused = false;
-      gameStarted = true;
-      holdPiece = null;
-      canHold = true;
-      currentPiece = getRandomPiece();
-      nextPiece = getRandomPiece();
-      overlay.classList.add('hidden');
-      updateUI();
-    }
+        const audio = new SoundFX();
 
-    function togglePause() {
-      if (!gameStarted || gameOver) return;
-      isPaused = !isPaused;
-      if (isPaused) {
-        showOverlay('PAUSED');
-      } else {
-        overlay.classList.add('hidden');
-      }
-    }
+        // --- 2. 遊戲基礎設定與變數 ---
+        const COLS = 10;
+        const ROWS = 20;
+        const BLOCK_SIZE = 30;
 
-    function showOverlay(title) {
-      overlayTitle.innerText = title;
-      finalScore.innerText = `Final Score: ${score}`;
-      startBtn.innerText = title === 'PAUSED' ? 'RESUME' : 'RESTART';
-      overlay.classList.remove('hidden');
-    }
+        const CANVAS = document.getElementById('tetrisCanvas');
+        const CTX = CANVAS.getContext('2d');
+        const NEXT_CANVAS = document.getElementById('nextCanvas');
+        const NEXT_CTX = NEXT_CANVAS.getContext('2d');
+        const HOLD_CANVAS = document.getElementById('holdCanvas');
+        const HOLD_CTX = HOLD_CANVAS.getContext('2d');
 
-    // 鍵盤監聽事件
-    document.addEventListener('keydown', (e) => {
-      if (!gameStarted && e.code === 'Space') {
-        startGame();
-        return;
-      }
-      if (e.code === 'KeyP') {
-        togglePause();
-        return;
-      }
-      if (isPaused || gameOver) return;
+        // 七種方塊定義
+        const TETROMINOES = {
+            'I': { shape: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], color: '#06b6d4' }, // 寶藍/青
+            'J': { shape: [[1,0,0],[1,1,1],[0,0,0]], color: '#3b82f6' },             // 藍
+            'L': { shape: [[0,0,1],[1,1,1],[0,0,0]], color: '#f97316' },             // 橘
+            'O': { shape: [[1,1],[1,1]], color: '#eab308' },                         // 黃
+            'S': { shape: [[0,1,1],[1,1,0],[0,0,0]], color: '#22c55e' },             // 綠
+            'T': { shape: [[0,1,0],[1,1,1],[0,0,0]], color: '#a855f7' },             // 紫
+            'Z': { shape: [[1,1,0],[0,1,1],[0,0,0]], color: '#ef4444' }              // 紅
+        };
 
-      switch (e.code) {
-        case 'ArrowLeft':
-        case 'KeyA':
-          playerMove(-1);
-          break;
-        case 'ArrowRight':
-        case 'KeyD':
-          playerMove(1);
-          break;
-        case 'ArrowDown':
-        case 'KeyS':
-          playerDrop();
-          break;
-        case 'ArrowUp':
-        case 'KeyW':
-        case 'KeyX':
-          playerRotate();
-          break;
-        case 'Space':
-          hardDrop();
-          break;
-        case 'KeyC':
-        case 'ShiftLeft':
-        case 'ShiftRight':
-          doHold();
-          break;
-      }
-    });
+        const KEYS = Object.keys(TETROMINOES);
 
-    // 螢幕按鈕事件綁定
-    document.getElementById('btnLeft').onclick = () => playerMove(-1);
-    document.getElementById('btnRight').onclick = () => playerMove(1);
-    document.getElementById('btnDown').onclick = () => playerDrop();
-    document.getElementById('btnRotate').onclick = () => playerRotate();
-    document.getElementById('btnHardDrop').onclick = () => hardDrop();
-    document.getElementById('btnSpaceDrop').onclick = () => hardDrop();
-    document.getElementById('btnHold').onclick = () => doHold();
-    document.getElementById('btnPause').onclick = () => togglePause();
-    startBtn.onclick = () => {
-      if (isPaused) togglePause();
-      else startGame();
-    };
+        let board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+        let score = 0;
+        let lines = 0;
+        let level = 1;
+        let highScore = localStorage.getItem('tetris_pad_highscore') || 0;
 
-    // 初始化顯示
-    showOverlay('TETRIS');
-    requestAnimationFrame(gameLoop);
-  </script>
+        let currentPiece = null;
+        let nextPiece = null;
+        let holdPiece = null;
+        let canHold = true;
+
+        let isPaused = false;
+        let isGameOver = false;
+        let dropCounter = 0;
+        let dropInterval = 1000;
+        let lastTime = 0;
+
+        // 初始化圖示與分數顯示
+        lucide.createIcons();
+        document.getElementById('highScoreVal').innerText = highScore;
+
+        // --- 3. 遊戲邏輯函數 ---
+        function createPiece(type) {
+            const spec = TETROMINOES[type];
+            return {
+                type,
+                shape: spec.shape.map(row => [...row]),
+                color: spec.color,
+                x: Math.floor((COLS - spec.shape[0].length) / 2),
+                y: 0
+            };
+        }
+
+        function getRandomPiece() {
+            const randomType = KEYS[Math.floor(Math.random() * KEYS.length)];
+            return createPiece(randomType);
+        }
+
+        function collide(board, piece, offset = { x: 0, y: 0 }) {
+            const { shape, x, y } = piece;
+            for (let r = 0; r < shape.length; r++) {
+                for (let c = 0; c < shape[r].length; c++) {
+                    if (shape[r][c]) {
+                        const newX = x + c + offset.x;
+                        const newY = y + r + offset.y;
+                        if (newX < 0 || newX >= COLS || newY >= ROWS) return true;
+                        if (newY >= 0 && board[newY][newX]) return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function merge(board, piece) {
+            piece.shape.forEach((row, r) => {
+                row.forEach((val, c) => {
+                    if (val && piece.y + r >= 0) {
+                        board[piece.y + r][piece.x + c] = piece.color;
+                    }
+                });
+            });
+        }
+
+        function rotateMatrix(matrix) {
+            const N = matrix.length;
+            return matrix.map((_, i) => matrix.map(row => row[i]).reverse());
+        }
+
+        function playerRotate() {
+            if (isPaused || isGameOver) return;
+            audio.init();
+            const originalShape = currentPiece.shape;
+            const rotated = rotateMatrix(currentPiece.shape);
+            currentPiece.shape = rotated;
+
+            // Kick 碰撞踢牆補償
+            let offset = 0;
+            if (collide(board, currentPiece)) {
+                offset = 1;
+                if (collide(board, currentPiece, { x: offset, y: 0 })) {
+                    offset = -1;
+                    if (collide(board, currentPiece, { x: offset, y: 0 })) {
+                        offset = 2;
+                        if (collide(board, currentPiece, { x: offset, y: 0 })) {
+                            currentPiece.shape = originalShape; // 復原
+                            return;
+                        }
+                    }
+                }
+            }
+            currentPiece.x += offset;
+            audio.rotate();
+        }
+
+        function playerMove(dir) {
+            if (isPaused || isGameOver) return;
+            audio.init();
+            if (!collide(board, currentPiece, { x: dir, y: 0 })) {
+                currentPiece.x += dir;
+                audio.move();
+            }
+        }
+
+        function playerDrop() {
+            if (isPaused || isGameOver) return;
+            audio.init();
+            if (!collide(board, currentPiece, { x: 0, y: 1 })) {
+                currentPiece.y++;
+                score += 1; // 加速下落加分
+                updateScoreDisplay();
+            } else {
+                lockPiece();
+            }
+            dropCounter = 0;
+        }
+
+        function hardDrop() {
+            if (isPaused || isGameOver) return;
+            audio.init();
+            let dropDist = 0;
+            while (!collide(board, currentPiece, { x: 0, y: 1 })) {
+                currentPiece.y++;
+                dropDist++;
+            }
+            score += dropDist * 2; // 瞬間落地額外高分
+            updateScoreDisplay();
+            audio.hardDrop();
+            lockPiece();
+        }
+
+        function doHold() {
+            if (isPaused || isGameOver || !canHold) return;
+            audio.init();
+            if (!holdPiece) {
+                holdPiece = createPiece(currentPiece.type);
+                currentPiece = nextPiece;
+                nextPiece = getRandomPiece();
+            } else {
+                const temp = createPiece(currentPiece.type);
+                currentPiece = createPiece(holdPiece.type);
+                holdPiece = temp;
+            }
+            canHold = false;
+            drawSideCanvases();
+            audio.rotate();
+        }
+
+        function lockPiece() {
+            merge(board, currentPiece);
+            audio.drop();
+            clearLines();
+            currentPiece = nextPiece;
+            nextPiece = getRandomPiece();
+            canHold = true;
+            drawSideCanvases();
+
+            if (collide(board, currentPiece)) {
+                gameOver();
+            }
+        }
+
+        function clearLines() {
+            let cleared = 0;
+            outer: for (let r = ROWS - 1; r >= 0; r--) {
+                for (let c = 0; c < COLS; c++) {
+                    if (!board[r][c]) continue outer;
+                }
+                const row = board.splice(r, 1)[0].fill(0);
+                board.unshift(row);
+                cleared++;
+                r++;
+            }
+
+            if (cleared > 0) {
+                lines += cleared;
+                const lineScores = [0, 100, 300, 500, 800];
+                score += (lineScores[cleared] || 1000) * level;
+                level = Math.floor(lines / 10) + 1;
+                dropInterval = Math.max(90, 1000 - (level - 1) * 85);
+
+                if (cleared === 4) audio.tetris();
+                else audio.lineClear();
+
+                updateScoreDisplay();
+            }
+        }
+
+        function getGhostY() {
+            let ghostY = currentPiece.y;
+            while (!collide(board, currentPiece, { x: 0, y: ghostY - currentPiece.y + 1 })) {
+                ghostY++;
+            }
+            return ghostY;
+        }
+
+        // --- 4. 畫面渲染 Render ---
+        function drawBlock(ctx, x, y, color, isGhost = false, size = BLOCK_SIZE) {
+            const pad = 1;
+            if (isGhost) {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(x * size + pad, y * size + pad, size - pad * 2, size - pad * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+                ctx.fillRect(x * size + pad, y * size + pad, size - pad * 2, size - pad * 2);
+            } else {
+                ctx.fillStyle = color;
+                ctx.fillRect(x * size + pad, y * size + pad, size - pad * 2, size - pad * 2);
+
+                // 光澤陰影細節
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+                ctx.fillRect(x * size + pad, y * size + pad, size - pad * 2, 3);
+                ctx.fillRect(x * size + pad, y * size + pad, 3, size - pad * 2);
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.fillRect(x * size + pad, y * size + size - 3 - pad, size - pad * 2, 3);
+                ctx.fillRect(x * size + size - 3 - pad, y * size + pad, 3, size - pad * 2);
+            }
+        }
+
+        function drawBoard() {
+            CTX.fillStyle = '#020617';
+            CTX.fillRect(0, 0, CANVAS.width, CANVAS.height);
+
+            // 背景網格
+            CTX.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            CTX.lineWidth = 1;
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    CTX.strokeRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                }
+            }
+
+            // 累積固定方塊
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (board[r][c]) {
+                        drawBlock(CTX, c, r, board[r][c]);
+                    }
+                }
+            }
+
+            // 目前操作方塊與影子 (Ghost Piece)
+            if (currentPiece && !isGameOver) {
+                const ghostY = getGhostY();
+                currentPiece.shape.forEach((row, r) => {
+                    row.forEach((val, c) => {
+                        if (val) {
+                            drawBlock(CTX, currentPiece.x + c, ghostY + r, currentPiece.color, true);
+                        }
+                    });
+                });
+
+                currentPiece.shape.forEach((row, r) => {
+                    row.forEach((val, c) => {
+                        if (val) {
+                            drawBlock(CTX, currentPiece.x + c, currentPiece.y + r, currentPiece.color);
+                        }
+                    });
+                });
+            }
+        }
+
+        function drawPreview(ctx, piece) {
+            ctx.clearRect(0, 0, 80, 80);
+            if (!piece) return;
+            const size = 16;
+            const shape = piece.shape;
+            const offsetX = Math.floor((80 - shape[0].length * size) / 2);
+            const offsetY = Math.floor((80 - shape.length * size) / 2);
+
+            shape.forEach((row, r) => {
+                row.forEach((val, c) => {
+                    if (val) {
+                        ctx.fillStyle = piece.color;
+                        ctx.fillRect(offsetX + c * size, offsetY + r * size, size - 1, size - 1);
+                    }
+                });
+            });
+        }
+
+        function drawSideCanvases() {
+            drawPreview(NEXT_CTX, nextPiece);
+            drawPreview(HOLD_CTX, holdPiece);
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById('scoreVal').innerText = score;
+            document.getElementById('linesVal').innerText = lines;
+            document.getElementById('levelVal').innerText = level;
+
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('tetris_pad_highscore', highScore);
+                document.getElementById('highScoreVal').innerText = highScore;
+            }
+        }
+
+        // --- 5. 遊戲主迴圈 Loop ---
+        function update(time = 0) {
+            const deltaTime = time - lastTime;
+            lastTime = time;
+
+            if (!isPaused && !isGameOver) {
+                dropCounter += deltaTime;
+                if (dropCounter > dropInterval) {
+                    playerDrop();
+                }
+                drawBoard();
+            }
+            requestAnimationFrame(update);
+        }
+
+        function resetGame() {
+            board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+            score = 0;
+            lines = 0;
+            level = 1;
+            dropInterval = 1000;
+            isGameOver = false;
+            isPaused = false;
+            holdPiece = null;
+            canHold = true;
+
+            currentPiece = getRandomPiece();
+            nextPiece = getRandomPiece();
+
+            updateScoreDisplay();
+            drawSideCanvases();
+            document.getElementById('pauseOverlay').classList.add('hidden');
+            document.getElementById('gameOverOverlay').classList.add('hidden');
+        }
+
+        function togglePause() {
+            if (isGameOver) return;
+            isPaused = !isPaused;
+            const overlay = document.getElementById('pauseOverlay');
+            const icon = document.getElementById('pauseIcon');
+
+            if (isPaused) {
+                overlay.classList.remove('hidden');
+                icon.setAttribute('data-lucide', 'play');
+            } else {
+                overlay.classList.add('hidden');
+                icon.setAttribute('data-lucide', 'pause');
+            }
+            lucide.createIcons();
+        }
+
+        function gameOver() {
+            isGameOver = true;
+            audio.gameOver();
+            document.getElementById('finalScore').innerText = score;
+            document.getElementById('gameOverOverlay').classList.remove('hidden');
+        }
+
+        // --- 6. 📱 觸控長按防疲勞連續觸發 (Continuous Touch Hold Repeat) ---
+        function bindTouchHold(elementId, actionFn, initialDelay = 160, repeatInterval = 60) {
+            const btn = document.getElementById(elementId);
+            let timer = null;
+            let repeatTimer = null;
+
+            const startAction = (e) => {
+                if (e.cancelable) e.preventDefault();
+                audio.init();
+                btn.classList.add('active');
+                actionFn(); // 首次觸發
+
+                // 定時器實現按住連續觸發
+                timer = setTimeout(() => {
+                    repeatTimer = setInterval(() => {
+                        actionFn();
+                    }, repeatInterval);
+                }, initialDelay);
+            };
+
+            const endAction = (e) => {
+                if (e.cancelable) e.preventDefault();
+                btn.classList.remove('active');
+                clearTimeout(timer);
+                clearInterval(repeatTimer);
+            };
+
+            btn.addEventListener('touchstart', startAction, { passive: false });
+            btn.addEventListener('touchend', endAction, { passive: false });
+            btn.addEventListener('touchcancel', endAction, { passive: false });
+
+            // 兼容滑鼠點擊
+            btn.addEventListener('mousedown', startAction);
+            btn.addEventListener('mouseup', endAction);
+            btn.addEventListener('mouseleave', endAction);
+        }
+
+        // 綁定虛擬搖桿/按鈕
+        bindTouchHold('btnLeft', () => playerMove(-1), 180, 70);
+        bindTouchHold('btnRight', () => playerMove(1), 180, 70);
+        bindTouchHold('btnDown', () => playerDrop(), 120, 45); // 加速下落反應更快
+
+        // 單次點擊型觸控按鈕
+        const bindSingleTouch = (elementId, actionFn) => {
+            const btn = document.getElementById(elementId);
+            const handler = (e) => {
+                if (e.cancelable) e.preventDefault();
+                audio.init();
+                actionFn();
+            };
+            btn.addEventListener('touchstart', handler, { passive: false });
+            btn.addEventListener('click', handler);
+        };
+
+        bindSingleTouch('btnRotate', playerRotate);
+        bindSingleTouch('btnHardDrop', hardDrop);
+        bindSingleTouch('btnHold', doHold);
+        bindSingleTouch('btnQuickPause', togglePause);
+
+        // UI 頂部按鈕綁定
+        document.getElementById('pauseBtn').addEventListener('click', togglePause);
+        document.getElementById('resumeBtn').addEventListener('click', togglePause);
+        document.getElementById('restartBtn').addEventListener('click', resetGame);
+        document.getElementById('startAgainBtn').addEventListener('click', resetGame);
+
+        document.getElementById('soundBtn').addEventListener('click', () => {
+            audio.init();
+            audio.muted = !audio.muted;
+            const icon = document.getElementById('soundIcon');
+            icon.setAttribute('data-lucide', audio.muted ? 'volume-x' : 'volume-2');
+            lucide.createIcons();
+        });
+
+        // --- 7. 鍵盤相容支援 (實體鍵盤連接時仍可使用) ---
+        document.addEventListener('keydown', (e) => {
+            if (e.repeat && ['Space', 'KeyC', 'KeyP'].includes(e.code)) return;
+            switch(e.code) {
+                case 'ArrowLeft':
+                case 'KeyA': playerMove(-1); break;
+                case 'ArrowRight':
+                case 'KeyD': playerMove(1); break;
+                case 'ArrowDown':
+                case 'KeyS': playerDrop(); break;
+                case 'ArrowUp':
+                case 'KeyW':
+                case 'KeyX': playerRotate(); break;
+                case 'Space': hardDrop(); break;
+                case 'KeyC':
+                case 'ShiftLeft':
+                case 'ShiftRight': doHold(); break;
+                case 'KeyP': togglePause(); break;
+            }
+        });
+
+        // 防止手機雙擊放大畫面或滾動頁面
+        document.addEventListener('gesturestart', (e) => e.preventDefault());
+
+        // 啟動遊戲
+        window.onload = () => {
+            resetGame();
+            requestAnimationFrame(update);
+        };
+    </script>
 </body>
 </html>
