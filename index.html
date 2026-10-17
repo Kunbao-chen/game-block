@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>極大化主畫面版 - 俄羅斯方塊</title>
+  <title>全螢幕填滿版 - 俄羅斯方塊</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
@@ -12,46 +12,49 @@
       box-sizing: border-box;
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
+      margin: 0;
+      padding: 0;
     }
 
-    body {
-      font-family: 'Press Start 2P', cursive, monospace;
-      background-color: #070a12;
+    html, body {
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      background-color: #050810;
       color: #f8fafc;
+      font-family: 'Press Start 2P', cursive, monospace;
       user-select: none;
       -webkit-user-select: none;
       overflow: hidden;
-      height: 100vh;
-      height: 100dvh;
     }
 
     .neon-border {
-      box-shadow: 0 0 15px rgba(34, 211, 238, 0.4), inset 0 0 10px rgba(34, 211, 238, 0.2);
+      box-shadow: 0 0 12px rgba(34, 211, 238, 0.5);
     }
 
-    /* 觸控按鈕專用點擊回饋 */
+    /* 按鈕按下與回饋 */
     .btn-control {
       touch-action: none;
-      transition: transform 0.05s ease, filter 0.05s ease;
+      transition: transform 0.04s ease, filter 0.04s ease;
     }
     .btn-control:active, .btn-control.active {
-      transform: scale(0.93);
-      filter: brightness(1.3);
+      transform: scale(0.94);
+      filter: brightness(1.35);
     }
   </style>
 </head>
-<body class="flex flex-col justify-between items-center px-1 py-1 h-full">
+<body class="flex flex-col justify-between items-center w-full h-full p-1">
 
-  <!-- 頂部超精簡 HUD：減少垂直空間佔用 -->
-  <header class="w-full max-w-md bg-slate-900/90 rounded-lg p-1.5 border border-slate-800 flex items-center justify-between text-[10px]">
+  <!-- 1. 頂部 HUD：簡潔橫條 -->
+  <header class="w-full bg-slate-900/90 rounded-lg p-1 border border-slate-800 flex items-center justify-between text-[10px] shrink-0 z-10">
     
-    <!-- HOLD 暫存預覽 -->
+    <!-- HOLD 暫存 -->
     <div class="flex items-center gap-1 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
       <span class="text-[8px] text-slate-400">HOLD</span>
-      <canvas id="holdCanvas" width="32" height="32" class="block"></canvas>
+      <canvas id="holdCanvas" width="30" height="30" class="block"></canvas>
     </div>
 
-    <!-- 得分與等級 -->
+    <!-- 得分 / 等級 -->
     <div class="flex items-center gap-3">
       <div class="flex flex-col items-center">
         <div class="text-[7px] text-slate-400">SCORE</div>
@@ -63,25 +66,25 @@
       </div>
     </div>
 
-    <!-- NEXT 下一個預覽 -->
+    <!-- NEXT 下一個 -->
     <div class="flex items-center gap-1 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
       <span class="text-[8px] text-slate-400">NEXT</span>
-      <canvas id="nextCanvas" width="32" height="32" class="block"></canvas>
+      <canvas id="nextCanvas" width="30" height="30" class="block"></canvas>
     </div>
 
-    <!-- 暫停按鈕 -->
+    <!-- 暫停 -->
     <button id="btnPause" class="bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded border border-slate-700 text-xs">
       ⏸️
     </button>
   </header>
 
-  <!-- 中央：極大化遊戲主畫面 (盡可能充滿螢幕) -->
-  <main class="flex-1 w-full flex items-center justify-center my-1 relative min-h-0">
-    <div id="canvasContainer" class="relative bg-slate-950 p-1 rounded-2xl border-2 border-cyan-500/60 neon-border flex items-center justify-center">
+  <!-- 2. 中間：主遊戲區域（無限充盈全螢幕） -->
+  <main id="mainContainer" class="flex-1 w-full flex items-center justify-center my-0.5 relative min-h-0 overflow-hidden">
+    <div id="canvasContainer" class="relative bg-slate-950 rounded-xl border-2 border-cyan-500/70 neon-border flex items-center justify-center">
       <canvas id="tetris" class="bg-slate-950 rounded-lg block"></canvas>
       
-      <!-- 遊戲開始 / 暫停 / 結束 蓋版 -->
-      <div id="overlay" class="absolute inset-0 bg-slate-950/90 rounded-2xl flex flex-col items-center justify-center p-4 gap-4 z-20">
+      <!-- 開始 / 暫停 / 結束 蓋版 -->
+      <div id="overlay" class="absolute inset-0 bg-slate-950/90 rounded-xl flex flex-col items-center justify-center p-4 gap-4 z-20">
         <h2 id="overlayTitle" class="text-2xl text-cyan-400 font-bold text-center">TETRIS</h2>
         <p id="finalScore" class="text-xs text-slate-300 font-sans hidden">最終得分: 0</p>
         <button id="startBtn" class="px-8 py-3.5 bg-cyan-500 active:bg-cyan-400 text-slate-950 text-sm font-bold rounded-xl transition-all font-sans shadow-lg cursor-pointer">
@@ -91,40 +94,40 @@
     </div>
   </main>
 
-  <!-- 底部按鈕區：緊湊精準佈局 -->
-  <footer class="w-full max-w-md grid grid-cols-5 gap-1 items-stretch pb-1">
+  <!-- 3. 底部：放大填滿的大按鈕區 -->
+  <footer class="w-full grid grid-cols-5 gap-1 items-stretch shrink-0 pb-1 h-[28vh] max-h-[220px] min-h-[140px]">
     
-    <!-- 左手區：靠左 / 加速 -->
-    <button id="btnLeft" class="bg-slate-800 border-2 border-slate-600 rounded-xl py-2.5 text-2xl font-bold flex flex-col items-center justify-center btn-control">
+    <!-- 左手區 -->
+    <button id="btnLeft" class="bg-slate-800 border-2 border-slate-600 rounded-2xl text-3xl font-bold flex flex-col items-center justify-center btn-control">
       <span>←</span>
-      <span class="text-[8px] font-sans text-slate-400">靠左</span>
+      <span class="text-[9px] font-sans text-slate-400 mt-0.5">靠左</span>
     </button>
 
-    <button id="btnDown" class="bg-slate-800 border-2 border-slate-600 rounded-xl py-2.5 text-2xl font-bold flex flex-col items-center justify-center btn-control">
+    <button id="btnDown" class="bg-slate-800 border-2 border-slate-600 rounded-2xl text-3xl font-bold flex flex-col items-center justify-center btn-control">
       <span>↓</span>
-      <span class="text-[8px] font-sans text-amber-400">加速</span>
+      <span class="text-[9px] font-sans text-amber-400 mt-0.5">加速</span>
     </button>
 
-    <!-- 中間區：到底 / 暫存 -->
+    <!-- 中間區 -->
     <div class="flex flex-col gap-1 justify-between">
-      <button id="btnHardDrop" class="bg-amber-600 border-2 border-amber-300 rounded-lg py-1.5 text-white font-bold flex-1 flex flex-col items-center justify-center btn-control">
-        <span class="text-sm">⚡</span>
-        <span class="text-[8px] font-sans">到底</span>
+      <button id="btnHardDrop" class="bg-amber-600 border-2 border-amber-300 rounded-xl text-white font-bold flex-1 flex flex-col items-center justify-center btn-control">
+        <span class="text-xl">⚡</span>
+        <span class="text-[9px] font-sans mt-0.5">到底</span>
       </button>
-      <button id="btnHold" class="bg-slate-800 border border-slate-600 rounded py-1 text-[8px] font-sans text-slate-300 btn-control">
+      <button id="btnHold" class="bg-slate-800 border border-slate-600 rounded-lg py-1.5 text-[9px] font-sans text-slate-300 btn-control">
         📦 暫存
       </button>
     </div>
 
-    <!-- 右手區：旋轉 / 靠右 -->
-    <button id="btnRotate" class="bg-cyan-700 border-2 border-cyan-400 rounded-xl py-2.5 text-2xl font-bold text-cyan-100 flex flex-col items-center justify-center btn-control shadow-md">
+    <!-- 右手區 -->
+    <button id="btnRotate" class="bg-cyan-700 border-2 border-cyan-400 rounded-2xl text-3xl font-bold text-cyan-100 flex flex-col items-center justify-center btn-control shadow-md">
       <span>↻</span>
-      <span class="text-[8px] font-sans text-cyan-200">旋轉</span>
+      <span class="text-[9px] font-sans text-cyan-200 mt-0.5">旋轉</span>
     </button>
 
-    <button id="btnRight" class="bg-slate-800 border-2 border-slate-600 rounded-xl py-2.5 text-2xl font-bold flex flex-col items-center justify-center btn-control">
+    <button id="btnRight" class="bg-slate-800 border-2 border-slate-600 rounded-2xl text-3xl font-bold flex flex-col items-center justify-center btn-control">
       <span>→</span>
-      <span class="text-[8px] font-sans text-slate-400">靠右</span>
+      <span class="text-[9px] font-sans text-slate-400 mt-0.5">靠右</span>
     </button>
 
   </footer>
@@ -149,20 +152,18 @@
 
     let BLOCK_SIZE = 20;
 
-    // 動態極大化計算：讓畫布盡可能放大
+    // 動態極大化計算：優先依據螢幕可用空間放滿 Canvas
     function resizeCanvas() {
-      const container = document.getElementById('canvasContainer');
-      const parent = container.parentElement;
-      
-      const maxH = parent.clientHeight - 8;
-      const maxW = parent.clientWidth - 8;
+      const main = document.getElementById('mainContainer');
+      const maxH = main.clientHeight - 4;
+      const maxW = main.clientWidth - 4;
 
-      let bSizeHeight = Math.floor(maxH / ROWS);
-      let bSizeWidth = Math.floor(maxW / COLS);
+      let bSizeH = Math.floor(maxH / ROWS);
+      let bSizeW = Math.floor(maxW / COLS);
 
-      // 取垂直與水平容納的最大極限值
-      BLOCK_SIZE = Math.min(bSizeHeight, bSizeWidth);
-      BLOCK_SIZE = Math.max(BLOCK_SIZE, 15); // 保障最小尺寸
+      // 選擇能完全放入螢幕最大化的尺寸
+      BLOCK_SIZE = Math.min(bSizeH, bSizeW);
+      BLOCK_SIZE = Math.max(BLOCK_SIZE, 12);
 
       canvas.width = COLS * BLOCK_SIZE;
       canvas.height = ROWS * BLOCK_SIZE;
@@ -391,7 +392,7 @@
     function drawBlock(ctxTarget, x, y, color) {
       ctxTarget.fillStyle = color;
       ctxTarget.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-      ctxTarget.strokeStyle = '#070a12';
+      ctxTarget.strokeStyle = '#050810';
       ctxTarget.lineWidth = 1.5;
       ctxTarget.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
     }
@@ -435,12 +436,12 @@
     }
 
     function drawPreview(pCtx, piece) {
-      pCtx.clearRect(0, 0, 32, 32);
+      pCtx.clearRect(0, 0, 30, 30);
       if (!piece) return;
-      const pBlockSize = 6;
+      const pBlockSize = 5;
       const shape = piece.shape;
-      const offsetX = (32 - shape[0].length * pBlockSize) / 2;
-      const offsetY = (32 - shape.length * pBlockSize) / 2;
+      const offsetX = (30 - shape[0].length * pBlockSize) / 2;
+      const offsetY = (30 - shape.length * pBlockSize) / 2;
 
       shape.forEach((row, r) => {
         row.forEach((value, c) => {
@@ -508,7 +509,7 @@
       overlay.classList.remove('hidden');
     }
 
-    // 觸控長按與監聽綁定
+    // 觸控與按鍵處理
     function attachControl(elementId, action, isContinuous = false) {
       const btn = document.getElementById(elementId);
       let timer = null;
