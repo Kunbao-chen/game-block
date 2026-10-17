@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>炸彈版 - 俄羅斯方塊</title>
+  <title>俄羅斯方塊 - 草圖排版穩定版</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
@@ -13,78 +13,7 @@
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
       margin: 0;
-      padding: 0;<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>HTC 除錯測試版 - 俄羅斯方塊</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; background: #030712; color: #fff; font-family: sans-serif; overflow: hidden; }
-  </style>
-</head>
-<body class="flex flex-col justify-between items-center w-full h-full p-2">
-
-  <!-- 頂部除錯訊息顯示框 -->
-  <div id="debugLog" class="w-full bg-slate-800 text-yellow-300 text-xs p-2 rounded border border-slate-600 h-20 overflow-y-auto font-mono">
-    [Log] 程式初始化中...<br>
-  </div>
-
-  <!-- 遊戲區域與開始按鈕 -->
-  <div class="relative flex-1 w-full flex items-center justify-center my-2 bg-slate-900 rounded-xl">
-    <canvas id="tetris" class="bg-black block"></canvas>
-    <div id="overlay" class="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center gap-4 z-50">
-      <h2 class="text-2xl text-cyan-400 font-bold">TETRIS</h2>
-      <button id="startBtn" onclick="runGameStart()" class="px-8 py-4 bg-cyan-500 text-black text-lg font-bold rounded-xl active:bg-cyan-300">
-        開始遊戲
-      </button>
-    </div>
-  </div>
-
-  <script>
-    function log(msg) {
-      var d = document.getElementById('debugLog');
-      if (d) {
-        d.innerHTML += '[Log] ' + msg + '<br>';
-        d.scrollTop = d.scrollHeight;
-      }
-    }
-
-    window.onerror = function(msg, url, lineNo, columnNo, error) {
-      log('<span style="color:red">ERROR: ' + msg + ' (Line ' + lineNo + ')</span>');
-      return false;
-    };
-
-    var canvas = document.getElementById('tetris');
-    var ctx = canvas.getContext('2d');
-    var gameStarted = false;
-
-    function runGameStart() {
-      log('已觸發 runGameStart() 點擊事件');
-      try {
-        gameStarted = true;
-        document.getElementById('overlay').style.display = 'none';
-        log('蓋版已隱藏，開始繪製畫面...');
-        drawTestBlock();
-      } catch(e) {
-        log('<span style="color:red">啟動失敗: ' + e.message + '</span>');
-      }
-    }
-
-    function drawTestBlock() {
-      canvas.width = 200;
-      canvas.height = 400;
-      ctx.fillStyle = 'red';
-      ctx.fillRect(50, 50, 40, 40);
-      log('測試紅塊已繪製，遊戲正常運作中！');
-    }
-
-    log('腳本載入完成，等待點擊「開始遊戲」...');
-  </script>
-</body>
-</html>
+      padding: 0;
     }
 
     html, body {
@@ -103,18 +32,14 @@
       box-shadow: 0 0 12px rgba(34, 211, 238, 0.4), inset 0 0 8px rgba(34, 211, 238, 0.2);
     }
 
-    .btn-control {
-      touch-action: manipulation;
-      transition: transform 0.04s ease, filter 0.04s ease;
-    }
-    .btn-control:active, .btn-control.active {
-      transform: scale(0.94);
-      filter: brightness(1.35);
+    .btn-act:active {
+      transform: scale(0.92);
+      filter: brightness(1.3);
     }
 
     @keyframes bombGlow {
       0%, 100% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.6); }
-      50% { box-shadow: 0 0 20px rgba(239, 68, 68, 1); }
+      50% { box-shadow: 0 0 18px rgba(239, 68, 68, 1); }
     }
     .bomb-ready {
       animation: bombGlow 1s infinite;
@@ -123,7 +48,7 @@
 </head>
 <body class="flex flex-col justify-between items-center w-full h-full p-1">
 
-  <!-- 1. 頂部 HUD -->
+  <!-- 1. 頂部狀態列 -->
   <header class="w-full bg-slate-900/90 rounded-lg p-1 border border-slate-800 flex items-center justify-between text-[10px] shrink-0 z-10">
     <div class="flex items-center gap-1 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
       <span class="text-[8px] text-slate-400">HOLD</span>
@@ -151,42 +76,42 @@
     </div>
   </header>
 
-  <!-- 2. 中間：主畫面草圖配置[cite: 4, 5] -->
+  <!-- 2. 中間草圖配置：左（↓/←）| 中央遊戲區 | 右（↻/→） -->
   <main id="mainContainer" class="flex-1 w-full flex items-stretch gap-1 my-1 relative min-h-0 overflow-hidden">
     
-    <!-- 左側控制區[cite: 4, 5] -->
+    <!-- 左側按鈕區 -->
     <div class="w-16 sm:w-20 flex flex-col gap-1 shrink-0 z-10">
-      <button id="btnDown" class="flex-1 bg-slate-800 border-2 border-slate-600 rounded-xl text-2xl font-bold flex flex-col items-center justify-center btn-control">
+      <button id="btnDown" class="flex-1 bg-slate-800 border-2 border-slate-600 rounded-xl text-2xl font-bold flex flex-col items-center justify-center btn-act">
         <span>↓</span>
         <span class="text-[8px] font-sans text-amber-400 mt-1">加速</span>
       </button>
-      <button id="btnLeft" class="flex-1 bg-slate-800 border-2 border-slate-600 rounded-xl text-2xl font-bold flex flex-col items-center justify-center btn-control">
+      <button id="btnLeft" class="flex-1 bg-slate-800 border-2 border-slate-600 rounded-xl text-2xl font-bold flex flex-col items-center justify-center btn-act">
         <span>←</span>
         <span class="text-[8px] font-sans text-slate-400 mt-1">靠左</span>
       </button>
     </div>
 
-    <!-- 中央畫布[cite: 4, 5] -->
+    <!-- 中央遊戲畫布 -->
     <div id="canvasContainer" class="flex-1 relative bg-slate-950 rounded-xl border-2 border-cyan-500/70 neon-border flex items-center justify-center overflow-hidden">
       <canvas id="tetris" class="bg-slate-950 rounded-lg block"></canvas>
       
-      <!-- 選單蓋版 (極高 z-index 並採用直連原生 onclick)[cite: 5] -->
+      <!-- 蓋版選單 (使用最穩定的獨立點擊處理) -->
       <div id="overlay" class="absolute inset-0 bg-slate-950/95 rounded-xl flex flex-col items-center justify-center p-4 gap-4 z-50">
         <h2 id="overlayTitle" class="text-2xl text-cyan-400 font-bold text-center">TETRIS</h2>
         <p id="finalScore" class="text-xs text-slate-300 font-sans hidden">最終得分: 0</p>
-        <button id="startBtn" onclick="handleStartBtnClick(event)" class="px-8 py-4 bg-cyan-500 hover:bg-cyan-400 active:scale-90 text-slate-950 text-sm font-bold rounded-xl transition-all font-sans shadow-lg cursor-pointer">
+        <button id="startBtn" class="px-8 py-4 bg-cyan-500 hover:bg-cyan-400 active:scale-95 text-slate-950 text-sm font-bold rounded-xl font-sans shadow-lg cursor-pointer">
           開始遊戲
         </button>
       </div>
     </div>
 
-    <!-- 右側控制區[cite: 4, 5] -->
+    <!-- 右側按鈕區 -->
     <div class="w-16 sm:w-20 flex flex-col gap-1 shrink-0 z-10">
-      <button id="btnRotate" onclick="playerRotate()" class="flex-1 bg-cyan-700 border-2 border-cyan-400 rounded-xl text-2xl font-bold text-cyan-100 flex flex-col items-center justify-center btn-control shadow-md">
+      <button id="btnRotate" class="flex-1 bg-cyan-700 border-2 border-cyan-400 rounded-xl text-2xl font-bold text-cyan-100 flex flex-col items-center justify-center btn-act shadow-md">
         <span>↻</span>
         <span class="text-[8px] font-sans text-cyan-200 mt-1">旋轉</span>
       </button>
-      <button id="btnRight" class="flex-1 bg-slate-800 border-2 border-slate-600 rounded-xl text-2xl font-bold flex flex-col items-center justify-center btn-control">
+      <button id="btnRight" class="flex-1 bg-slate-800 border-2 border-slate-600 rounded-xl text-2xl font-bold flex flex-col items-center justify-center btn-act">
         <span>→</span>
         <span class="text-[8px] font-sans text-slate-400 mt-1">靠右</span>
       </button>
@@ -194,66 +119,67 @@
 
   </main>
 
-  <!-- 3. 底部按鈕：Pause / Restart / 炸彈[cite: 4, 5] -->
+  <!-- 3. 底部功能鍵：Pause / Restart / 炸彈 -->
   <footer class="w-full grid grid-cols-3 gap-1.5 items-stretch shrink-0 pb-1 h-[14vh] max-h-[110px] min-h-[75px] z-10">
-    <button id="btnPause" onclick="togglePause()" class="bg-slate-800 border-2 border-slate-600 rounded-xl text-xl font-bold flex flex-col items-center justify-center btn-control text-slate-200">
+    <button id="btnPause" class="bg-slate-800 border-2 border-slate-600 rounded-xl text-xl font-bold flex flex-col items-center justify-center btn-act text-slate-200">
       <span>⏸️</span>
       <span class="text-[8px] font-sans text-slate-400 mt-0.5">Pause</span>
     </button>
 
-    <button id="btnRestart" onclick="handleStartGame()" class="bg-slate-800 border-2 border-slate-600 rounded-xl text-sm font-bold flex flex-col items-center justify-center btn-control text-cyan-300">
+    <button id="btnRestart" class="bg-slate-800 border-2 border-slate-600 rounded-xl text-sm font-bold flex flex-col items-center justify-center btn-act text-cyan-300">
       <span class="text-lg">🔄</span>
       <span class="text-[9px] font-sans mt-0.5">Restart</span>
     </button>
 
-    <button id="btnBomb" onclick="activateBomb()" class="bg-red-900/80 border-2 border-red-500 rounded-xl text-white font-bold flex flex-col items-center justify-center btn-control relative">
+    <button id="btnBomb" class="bg-red-900/80 border-2 border-red-500 rounded-xl text-white font-bold flex flex-col items-center justify-center btn-act relative">
       <span class="text-xl">💣</span>
       <span id="btnBombText" class="text-[9px] font-sans text-red-300 mt-0.5">炸彈 (0)</span>
     </button>
   </footer>
 
   <script>
-    const COLS = 10;
-    const ROWS = 20;
+    var COLS = 10;
+    var ROWS = 20;
 
-    const canvas = document.getElementById('tetris');
-    const ctx = canvas.getContext('2d');
-    const holdCanvas = document.getElementById('holdCanvas');
-    const holdCtx = holdCanvas.getContext('2d');
-    const nextCanvas = document.getElementById('nextCanvas');
-    const nextCtx = nextCanvas.getContext('2d');
+    var canvas = document.getElementById('tetris');
+    var ctx = canvas.getContext('2d');
+    var holdCanvas = document.getElementById('holdCanvas');
+    var holdCtx = holdCanvas.getContext('2d');
+    var nextCanvas = document.getElementById('nextCanvas');
+    var nextCtx = nextCanvas.getContext('2d');
 
-    const scoreEl = document.getElementById('score');
-    const levelEl = document.getElementById('level');
-    const bombCountHUD = document.getElementById('bombCountHUD');
-    const btnBombText = document.getElementById('btnBombText');
-    const btnBomb = document.getElementById('btnBomb');
+    var scoreEl = document.getElementById('score');
+    var levelEl = document.getElementById('level');
+    var bombCountHUD = document.getElementById('bombCountHUD');
+    var btnBombText = document.getElementById('btnBombText');
+    var btnBomb = document.getElementById('btnBomb');
 
-    const overlay = document.getElementById('overlay');
-    const overlayTitle = document.getElementById('overlayTitle');
-    const finalScore = document.getElementById('finalScore');
-    const startBtn = document.getElementById('startBtn');
+    var overlay = document.getElementById('overlay');
+    var overlayTitle = document.getElementById('overlayTitle');
+    var finalScore = document.getElementById('finalScore');
+    var startBtn = document.getElementById('startBtn');
 
-    let BLOCK_SIZE = 20;
-    let bombInventory = 0;
+    var BLOCK_SIZE = 20;
+    var bombInventory = 0;
 
     function resizeCanvas() {
-      const container = document.getElementById('canvasContainer');
-      const maxH = container.clientHeight - 8;
-      const maxW = container.clientWidth - 8;
+      var container = document.getElementById('canvasContainer');
+      if (!container) return;
+      var maxH = container.clientHeight - 8;
+      var maxW = container.clientWidth - 8;
 
-      let bSizeH = Math.floor(maxH / ROWS);
-      let bSizeW = Math.floor(maxW / COLS);
+      var bSizeH = Math.floor(maxH / ROWS);
+      var bSizeW = Math.floor(maxW / COLS);
 
       BLOCK_SIZE = Math.min(bSizeH, bSizeW);
-      BLOCK_SIZE = Math.max(BLOCK_SIZE, 12);
+      if (isNaN(BLOCK_SIZE) || BLOCK_SIZE < 10) BLOCK_SIZE = 15;
 
       canvas.width = COLS * BLOCK_SIZE;
       canvas.height = ROWS * BLOCK_SIZE;
     }
     window.addEventListener('resize', resizeCanvas);
 
-    const SHAPES = {
+    var SHAPES = {
       I: [[0,0,0,0], [1,1,1,1], [0,0,0,0], [0,0,0,0]],
       J: [[1,0,0], [1,1,1], [0,0,0]],
       L: [[0,0,1], [1,1,1], [0,0,0]],
@@ -263,24 +189,24 @@
       Z: [[1,1,0], [0,1,1], [0,0,0]]
     };
 
-    const COLORS = {
+    var COLORS = {
       I: '#06b6d4', J: '#3b82f6', L: '#f97316',
       O: '#eab308', S: '#22c55e', T: '#a855f7', Z: '#ef4444'
     };
 
-    let board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
-    let score = 0, lines = 0, level = 1;
-    let gameOver = false, isPaused = false, gameStarted = false;
-    let dropCounter = 0, dropInterval = 1000;
-    let lastTime = 0;
+    var board = [];
+    var score = 0, lines = 0, level = 1;
+    var gameOver = false, isPaused = false, gameStarted = false;
+    var dropCounter = 0, dropInterval = 1000;
+    var lastTime = 0;
 
-    let currentPiece = null;
-    let nextPiece = null;
-    let holdPiece = null;
-    let canHold = true;
+    var currentPiece = null;
+    var nextPiece = null;
+    var holdPiece = null;
+    var canHold = true;
 
     // 音效解鎖
-    let audioCtx = null;
+    var audioCtx = null;
     function initAudio() {
       try {
         if (!audioCtx) {
@@ -292,12 +218,12 @@
       } catch (e) {}
     }
 
-    function playSound(freq, duration, type='square') {
+    function playSound(freq, duration, type) {
       if (!audioCtx) return;
       try {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = type;
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.type = type || 'square';
         osc.frequency.value = freq;
         gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
@@ -311,8 +237,8 @@
     function playExplosionSound() {
       if (!audioCtx) return;
       try {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(150, audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.4);
@@ -325,33 +251,39 @@
       } catch(e){}
     }
 
-    class Piece {
-      constructor(type) {
-        this.type = type;
-        this.shape = SHAPES[type];
-        this.color = COLORS[type];
-        this.x = Math.floor((COLS - this.shape[0].length) / 2);
-        this.y = 0;
-        this.isBomb = false;
-      }
+    function Piece(type) {
+      this.type = type;
+      this.shape = SHAPES[type];
+      this.color = COLORS[type];
+      this.x = Math.floor((COLS - this.shape[0].length) / 2);
+      this.y = 0;
+      this.isBomb = false;
     }
 
     function getRandomPiece() {
-      const types = Object.keys(SHAPES);
+      var types = Object.keys(SHAPES);
       return new Piece(types[Math.floor(Math.random() * types.length)]);
     }
 
     function createBoard() {
-      return Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+      var b = [];
+      for (var r = 0; r < ROWS; r++) {
+        var row = [];
+        for (var c = 0; c < COLS; c++) row.push(0);
+        b.push(row);
+      }
+      return b;
     }
 
-    function collide(board, piece, offset = { x: 0, y: 0 }) {
-      const shape = piece.shape;
-      for (let r = 0; r < shape.length; r++) {
-        for (let c = 0; c < shape[r].length; c++) {
+    function collide(board, piece, offset) {
+      var offX = offset ? offset.x : 0;
+      var offY = offset ? offset.y : 0;
+      var shape = piece.shape;
+      for (var r = 0; r < shape.length; r++) {
+        for (var c = 0; c < shape[r].length; c++) {
           if (shape[r][c] !== 0) {
-            let newX = piece.x + c + offset.x;
-            let newY = piece.y + r + offset.y;
+            var newX = piece.x + c + offX;
+            var newY = piece.y + r + offY;
             if (newX < 0 || newX >= COLS || newY >= ROWS) return true;
             if (newY >= 0 && board[newY][newX] !== 0) return true;
           }
@@ -361,11 +293,11 @@
     }
 
     function merge(board, piece) {
-      piece.shape.forEach((row, r) => {
-        row.forEach((value, c) => {
+      piece.shape.forEach(function(row, r) {
+        row.forEach(function(value, c) {
           if (value !== 0) {
-            let boardY = piece.y + r;
-            let boardX = piece.x + c;
+            var boardY = piece.y + r;
+            var boardX = piece.x + c;
             if (boardY >= 0) board[boardY][boardX] = piece.isBomb ? '#ef4444' : piece.color;
           }
         });
@@ -373,10 +305,15 @@
     }
 
     function rotate(shape) {
-      const N = shape.length;
-      let result = Array.from({ length: N }, () => Array(N).fill(0));
-      for (let r = 0; r < N; r++) {
-        for (let c = 0; c < N; c++) {
+      var N = shape.length;
+      var result = [];
+      for (var i = 0; i < N; i++) {
+        var row = [];
+        for (var j = 0; j < N; j++) row.push(0);
+        result.push(row);
+      }
+      for (var r = 0; r < N; r++) {
+        for (var c = 0; c < N; c++) {
           result[c][N - 1 - r] = shape[r][c];
         }
       }
@@ -385,10 +322,10 @@
 
     function playerRotate() {
       if (!currentPiece || gameOver || isPaused || !gameStarted) return;
-      const originalShape = currentPiece.shape;
+      var originalShape = currentPiece.shape;
       currentPiece.shape = rotate(currentPiece.shape);
       
-      let offset = 0;
+      var offset = 0;
       if (collide(board, currentPiece)) {
         if (!collide(board, currentPiece, { x: 1, y: 0 })) offset = 1;
         else if (!collide(board, currentPiece, { x: -1, y: 0 })) offset = -1;
@@ -443,23 +380,24 @@
 
     function triggerExplosion(piece) {
       playExplosionSound();
-      
-      const centerX = piece.x + Math.floor(piece.shape[0].length / 2);
-      const centerY = piece.y + Math.floor(piece.shape.length / 2);
+      var centerX = piece.x + Math.floor(piece.shape[0].length / 2);
+      var centerY = piece.y + Math.floor(piece.shape.length / 2);
 
-      const radius = 2; // 摧毀 5x5 範圍
-      for (let r = centerY - radius; r <= centerY + radius; r++) {
-        for (let c = centerX - radius; c <= centerX + radius; c++) {
+      var radius = 2;
+      for (var r = centerY - radius; r <= centerY + radius; r++) {
+        for (var c = centerX - radius; c <= centerX + radius; c++) {
           if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
             board[r][c] = 0;
           }
         }
       }
 
-      const container = document.getElementById('canvasContainer');
-      container.style.transform = 'translate(4px, 4px)';
-      setTimeout(() => container.style.transform = 'translate(-4px, -4px)', 50);
-      setTimeout(() => container.style.transform = 'translate(0, 0)', 100);
+      var container = document.getElementById('canvasContainer');
+      if (container) {
+        container.style.transform = 'translate(4px, 4px)';
+        setTimeout(function(){ container.style.transform = 'translate(-4px, -4px)'; }, 50);
+        setTimeout(function(){ container.style.transform = 'translate(0, 0)'; }, 100);
+      }
     }
 
     function activateBomb() {
@@ -471,6 +409,246 @@
     }
 
     function clearLines() {
-      let linesCleared = 0;
-      outer: for (let r = ROWS - 1; r >= 0; r--) {
-        for (let
+      var linesCleared = 0;
+      outer: for (var r = ROWS - 1; r >= 0; r--) {
+        for (var c = 0; c < COLS; c++) {
+          if (board[r][c] === 0) continue outer;
+        }
+        var row = board.splice(r, 1)[0];
+        for (var i = 0; i < COLS; i++) row[i] = 0;
+        board.unshift(row);
+        linesCleared++;
+        r++;
+      }
+
+      if (linesCleared > 0) {
+        playSound(587, 0.15);
+        lines += linesCleared;
+        var lineScores = [0, 100, 300, 500, 800];
+        score += (lineScores[linesCleared] || 1000) * level;
+
+        if (linesCleared === 4) {
+          bombInventory++;
+          playSound(900, 0.3, 'triangle');
+        }
+
+        updateDifficulty();
+      }
+    }
+
+    function updateDifficulty() {
+      level = Math.floor(lines / 10) + 1;
+      dropInterval = Math.max(60, Math.floor(1000 * Math.pow(0.85, level - 1)));
+    }
+
+    function drawBlock(ctxTarget, x, y, color) {
+      ctxTarget.fillStyle = color;
+      ctxTarget.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+      ctxTarget.strokeStyle = '#030712';
+      ctxTarget.lineWidth = 1.5;
+      ctxTarget.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (var r = 0; r < ROWS; r++) {
+        for (var c = 0; c < COLS; c++) {
+          if (board[r][c] !== 0) {
+            drawBlock(ctx, c, r, board[r][c]);
+          }
+        }
+      }
+
+      if (currentPiece) {
+        var ghostY = 0;
+        while (!collide(board, currentPiece, { x: 0, y: ghostY + 1 })) {
+          ghostY++;
+        }
+        currentPiece.shape.forEach(function(row, r) {
+          row.forEach(function(value, c) {
+            if (value !== 0) {
+              ctx.fillStyle = currentPiece.isBomb ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255, 255, 255, 0.15)';
+              ctx.fillRect((currentPiece.x + c) * BLOCK_SIZE, (currentPiece.y + r + ghostY) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+            }
+          });
+        });
+
+        currentPiece.shape.forEach(function(row, r) {
+          row.forEach(function(value, c) {
+            if (value !== 0) {
+              var pieceColor = currentPiece.isBomb ? '#ef4444' : currentPiece.color;
+              drawBlock(ctx, currentPiece.x + c, currentPiece.y + r, pieceColor);
+            }
+          });
+        });
+      }
+
+      drawPreview(nextCtx, nextPiece);
+      drawPreview(holdCtx, holdPiece);
+    }
+
+    function drawPreview(pCtx, piece) {
+      pCtx.clearRect(0, 0, 28, 28);
+      if (!piece) return;
+      var pBlockSize = 5;
+      var shape = piece.shape;
+      var offsetX = (28 - shape[0].length * pBlockSize) / 2;
+      var offsetY = (28 - shape.length * pBlockSize) / 2;
+
+      shape.forEach(function(row, r) {
+        row.forEach(function(value, c) {
+          if (value !== 0) {
+            pCtx.fillStyle = piece.color;
+            pCtx.fillRect(offsetX + c * pBlockSize, offsetY + r * pBlockSize, pBlockSize, pBlockSize);
+          }
+        });
+      });
+    }
+
+    function updateUI() {
+      scoreEl.innerText = score;
+      levelEl.innerText = level;
+      bombCountHUD.innerText = bombInventory;
+      btnBombText.innerText = '炸彈 (' + bombInventory + ')';
+
+      if (bombInventory > 0) {
+        btnBomb.classList.add('bomb-ready', 'bg-red-700');
+        btnBomb.classList.remove('bg-red-900/80');
+      } else {
+        btnBomb.classList.remove('bomb-ready', 'bg-red-700');
+        btnBomb.classList.add('bg-red-900/80');
+      }
+    }
+
+    function gameLoop(time) {
+      if (!time) time = 0;
+      var deltaTime = time - lastTime;
+      lastTime = time;
+
+      if (gameStarted && !isPaused && !gameOver) {
+        dropCounter += deltaTime;
+        if (dropCounter > dropInterval) {
+          playerDrop();
+        }
+        draw();
+      }
+      requestAnimationFrame(gameLoop);
+    }
+
+    function handleStartGame() {
+      initAudio();
+      board = createBoard();
+      score = 0;
+      lines = 0;
+      level = 1;
+      bombInventory = 0;
+      updateDifficulty();
+      gameOver = false;
+      isPaused = false;
+      gameStarted = true;
+      holdPiece = null;
+      canHold = true;
+      currentPiece = getRandomPiece();
+      nextPiece = getRandomPiece();
+      overlay.classList.add('hidden');
+      resizeCanvas();
+      updateUI();
+    }
+
+    function togglePause() {
+      if (!gameStarted || gameOver) return;
+      isPaused = !isPaused;
+      if (isPaused) {
+        showOverlay('遊戲暫停');
+      } else {
+        overlay.classList.add('hidden');
+      }
+    }
+
+    function showOverlay(title) {
+      overlayTitle.innerText = title;
+      finalScore.innerText = '最終得分: ' + score;
+      if (title !== 'TETRIS') finalScore.classList.remove('hidden');
+      startBtn.innerText = title === '遊戲暫停' ? '繼續遊戲' : '開始遊戲';
+      overlay.classList.remove('hidden');
+    }
+
+    // 相容所有行動裝置的按鍵點擊綁定
+    function bindButton(elementId, onClickAction, isContinuous) {
+      var btn = document.getElementById(elementId);
+      if (!btn) return;
+      var timer = null;
+      var repeatTimer = null;
+
+      function start(e) {
+        if (e && e.cancelable) e.preventDefault();
+        initAudio();
+        btn.classList.add('active');
+        onClickAction();
+
+        if (isContinuous) {
+          timer = setTimeout(function() {
+            repeatTimer = setInterval(onClickAction, 60);
+          }, 160);
+        }
+      }
+
+      function end(e) {
+        if (e && e.cancelable) e.preventDefault();
+        btn.classList.remove('active');
+        clearTimeout(timer);
+        clearInterval(repeatTimer);
+      }
+
+      btn.addEventListener('touchstart', start, { passive: false });
+      btn.addEventListener('touchend', end);
+      btn.addEventListener('touchcancel', end);
+
+      btn.addEventListener('mousedown', start);
+      btn.addEventListener('mouseup', end);
+      btn.addEventListener('mouseleave', end);
+    }
+
+    // 綁定各功能按鈕
+    bindButton('btnLeft', function(){ playerMove(-1); }, true);
+    bindButton('btnRight', function(){ playerMove(1); }, true);
+    bindButton('btnDown', function(){ playerDrop(); }, true);
+    bindButton('btnRotate', function(){ playerRotate(); }, false);
+
+    bindButton('btnPause', function(){ togglePause(); }, false);
+    bindButton('btnRestart', function(){ handleStartGame(); }, false);
+    bindButton('btnBomb', function(){ activateBomb(); }, false);
+
+    // 開始按鈕獨特監聽
+    startBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (isPaused) togglePause();
+      else handleStartGame();
+    });
+    startBtn.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      if (isPaused) togglePause();
+      else handleStartGame();
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (!gameStarted && e.code === 'Space') { handleStartGame(); return; }
+      if (e.code === 'KeyP') { togglePause(); return; }
+      if (isPaused || gameOver) return;
+
+      switch (e.code) {
+        case 'ArrowLeft': case 'KeyA': playerMove(-1); break;
+        case 'ArrowRight': case 'KeyD': playerMove(1); break;
+        case 'ArrowDown': case 'KeyS': playerDrop(); break;
+        case 'ArrowUp': case 'KeyW': case 'KeyX': playerRotate(); break;
+        case 'KeyB': activateBomb(); break;
+      }
+    });
+
+    resizeCanvas();
+    showOverlay('TETRIS');
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
